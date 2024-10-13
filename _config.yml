@@ -8,10 +8,10 @@
 
 # Basic Site Settings
 locale                   : "en-US"
-title                    : "Maxime Alvarez - PhD Student in Robotics at the University of Tokyo, Matsuo Lab"
+title                    : "Maxime Alvarez"
 title_separator          : "-"
 name                     : &name "Maxime Alvarez"
-description              : &description "PhD Student in Robotics at the University of Tokyo, Matsuo Lab and Research Engineer at NABLAS"
+description              : &description "PhD Student in Robotics at the University of Tokyo, Matsuo-Iwasawa Lab and Research Engineer at NABLAS"
 url                      : https://qu3tzal.github.io/ # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
 repository               : "qu3tzal/qu3tzal.github.io"
@@ -223,33 +223,6 @@ collections:
 
 # These settings control how pages and collections are included in the site
 defaults:
-  # _posts
-  - scope:
-      path: ""
-      type: posts
-    values:
-      layout: single
-      author_profile: true
-      read_time: true
-      comments: true
-      share: true
-      related: true
-  # _pages
-  - scope:
-      path: ""
-      type: pages
-    values:
-      layout: single
-      author_profile: true
-  # _teaching
-  - scope:
-      path: ""
-      type: teaching
-    values:
-      layout: single
-      author_profile: true
-      share: true
-      comments: true
   # _publications
   - scope:
       path: ""
@@ -259,23 +232,6 @@ defaults:
       author_profile: true
       share: true
       comments: true
-  # _portfolio
-  - scope:
-      path: ""
-      type: portfolio
-    values:
-      layout: single
-      author_profile: true
-      share: true
-      comment: true
-  # _talks
-  - scope:
-      path: ""
-      type: talks
-    values:
-      layout: talk
-      author_profile: true
-      share: true
 
 
 # Sass/SCSS
