@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <title>Maxime Alvarez - Personal Website</title>
+    <link href="https://unpkg.com/@csstools/normalize.css" rel="stylesheet" />
+    <script src="https://kit.fontawesome.com/b80414b11c.js" crossorigin="anonymous"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+
+        body {
+            width: 1400px;
+            margin: 0 auto;
+            padding: 0;
+
+            font-family: "Open Sans", sans-serif;
+            font-optical-sizing: auto;
+            font-style: normal;
+            font-size: 16px;
+            font-weight: 300;
+        }
+
+        h1 {
+            font-family: "Noto Sans JP", sans-serif;
+            font-weight: 400;
+            font-style: normal;
+            font-size: 40px;
+            text-align: right;
+            margin-top: 1em;
+        }
+
+        h2 {
+            font-weight: 300;
+            font-size: 32px;
+        }
+
+        nav {
+            width: 220px;
+            box-sizing: border-box;
+            float: left;
+
+            align-items: center;
+            padding: 1em;
+        }
+
+        nav img {
+            width: 220px;
+            height: 220px;
+            border-radius: 100%;
+        }
+
+        main {
+            width: 800px;
+            margin: auto;
+            box-sizing: border-box;
+        }
+
+        .pub-list, .xp-list, .edu-list {
+            padding: 0;
+            margin: 0;
+        }
+
+        .xp-list, .edu-list {
+            list-style-type: none;
+        }
+
+        .pub-item, .xp-item, .edu-item {
+            padding: 1em;
+            margin: 1em;
+        }
+
+        .xp-item, .edu-item {
+            display: block;
+        }
+
+        .xp-item img, .edu-item img {
+            display: inline-block;
+            width: 80px;
+            margin-right: 1em;
+            vertical-align: middle;
+        }
+
+        .xp-item img, .edu-item img, .xp-item div, .edu-item div {
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .pub-item p, .xp-item p, .edu-item p {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <img src="img/pp.jpg" alt="Maxime Alvarez"/>
+        <div id="socials">
+            <a href="https://www.linkedin.com/in/maxime-alvarez/"><i class="fa-brands fa-linkedin"></i></a>
+            <a href="https://github.com/Qu3tzal"><i class="fa-brands fa-github"></i></a>
+            <a href="https://scholar.google.com/citations?user=R115H90AAAAJ&hl=en"><i class="fa-brands fa-google"></i></a>
+            <a href="https://x.com/qu3tzalify"><i class="fa-brands fa-twitter"></i></a>
+        </div>
+    </nav>
+    <main>
+        <h1>Maxime Alvarez</h1>
+        <h2>Hello !</h2>
+        <p>
+            I am a PhD student at the University of Tokyo in the <a href="https://weblab.t.u-tokyo.ac.jp/en/">Matsuo-Iwasawa lab</a> supervised by <a href="https://ymatsuo.com/en/">Prof. Matsuo</a> and
+            mentored by <a href="https://scholar.google.com/citations?user=Wyn6BtsAAAAJ&hl=en&oi=ao">Matsushima Tatsuya</a> where I study ways to make robots smarter through visual-language-action models.
+            I am also a research engineer at <a href="https://www.nablas.com/">NABLAS</a> where I work on visual inspection and multimodal retrieval-augmented search.
+        </p>
+        <h2>Publications</h2>
+        <ul class="pub-list">
+            <li class="pub-item">ICLR 2022 ML Evaluation Workshop, <a href="https://arxiv.org/abs/2204.09825">A Revealing Large-Scale Evaluation of Unsupervised Anomaly Detection Algorithms</a>, <i><b>M. Alvarez</b>, J.C. Verdier, D.J.K. Nkashama, M. Frappier, P.M. Tardif, F. Kabanza</i></li>
+        </ul>
+        <h2>Experience</h2>
+        <ul class="xp-list">
+            <li class="xp-item">
+                <img src="img/nablas.png" alt="NABLAS logo" />
+                <div>
+                    <p class="xp-title"><b>Research Engineer</b></p>
+                    <p class="xp-date">10/2023 ~ Today</p>
+                    <p class="xp-company"><b><i>NABLAS</i></b> 🇯🇵</p>
+                </div>
+            </li>
+            <li class="xp-item">
+                <img src="img/pretia.png" alt="Pretia logo" />
+                <div>
+                    <p class="xp-title"><b>R&D Engineer</b></p>
+                    <p class="xp-date">04/2023 ~ 10/2023</p>
+                    <p class="xp-company"><b><i>Pretia Technologies</i></b> 🇯🇵</p>
+                </div>
+            </li>
+            <li class="xp-item">
+                <img src="img/meta.png" alt="Meta logo" />
+                <div>
+                    <p class="xp-title"><b>ML SWE Intern</b></p>
+                    <p class="xp-date">Summer 2022</p>
+                    <p class="xp-company"><b><i>Meta</i></b> 🇬🇧</p>
+                </div>
+            </li>
+            <li class="xp-item">
+                <img src="img/acsl.png" alt="ACSL logo" />
+                <div>
+                    <p class="xp-title"><b>R&D Engineer</b></p>
+                    <p class="xp-date">08/2019 ~ 08/2021</p>
+                    <p class="xp-company"><b><i>ACSL, Ltd</i></b> 🇯🇵</p>
+                </div>
+            </li>
+        </ul>
+        <h2>Education</h2>
+        <ul class="edu-list">
+            <li class="edu-item">
+                <img src="img/utokyo.png" alt="UTokyo logo" />
+                <div>
+                    <p class="edu-title"><b>PhD</b></p>
+                    <p class="edu-date">2024 ~ 2027</p>
+                    <p class="edu-dept">Graduate School of Engineering, Dept. of Technology Management for Innovation</p>
+                    <p class="edu-university"><b><i>University of Tokyo</i></b> 🇯🇵</p>
+                </div>
+            </li>
+            <li class="edu-item">
+                <img src="img/ensps.png" alt="ENS Paris-Saclay logo" />
+                <div>
+                    <p class="edu-title"><b>Master of Science - Mathematics, Vision, Learning</b></p>
+                    <p class="edu-date">2021 ~ 2022</p>
+                    <p class="edu-dept">Graduate School of Mathematics, Dept. of Mathematics</p>
+                    <p class="edu-university"><b><i>École Normale Supérieure Paris-Saclay</i></b> 🇫🇷</p>
+                </div>
+            </li>
+            <li class="edu-item">
+                <img src="img/udes.png" alt="UdeS logo" />
+                <div>
+                    <p class="edu-title"><b>Master of Science - Computer Science</b></p>
+                    <p class="edu-date">2018 ~ 2019</p>
+                    <p class="edu-dept">Faculty of Science, Dept. of Computer Science</p>
+                    <p class="edu-university"><b><i>University of Sherbrooke</i></b> 🇨🇦</p>
+                </div>
+            </li>
+            <li class="edu-item">
+                <img src="img/polytechtours.png" alt="Polytech Tours logo" />
+                <div>
+                    <p class="edu-title"><b>Master of Engineering - Software Engineering</b></p>
+                    <p class="edu-date">2014 ~ 2019</p>
+                    <p class="edu-dept">Dept. of Computer Science</p>
+                    <p class="edu-university"><b><i>Polytech Tours</i></b> 🇫🇷</p>
+                </div>
+            </li>
+        </ul>
+    </main>
+</body>
+</html>
