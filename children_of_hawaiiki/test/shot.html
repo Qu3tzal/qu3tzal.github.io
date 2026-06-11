@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!-- Screenshot harness: ?state=island|atoll|voyage|storm — used by headless rendering checks -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>shot harness</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div id="brand">CHILDREN OF HAWAIKI</div>
+    <div id="topinfo"></div>
+  </header>
+  <main>
+    <div id="canvas-wrap"><canvas id="scene" width="960" height="640"></canvas></div>
+    <aside id="panel"></aside>
+  </main>
+</div>
+<div id="overlay" class="hidden"></div>
+<script src="../js/data.js"></script>
+<script src="../js/game.js"></script>
+<script src="../js/voyage.js"></script>
+<script src="../js/render.js"></script>
+<script src="../js/ui.js"></script>
+<script>
+window.addEventListener("DOMContentLoaded", () => {
+  bindUI();
+  newGame();
+  const state = new URLSearchParams(location.search).get("state") || "island";
+  if (state === "island") {
+    G.pop = 16;
+    G.jobs = { fisher: 4, farmer: 3, woodcutter: 2, builder: 3, scout: 2, navigator: 1 };
+    G.canoe.progress = 45;
+  } else if (state === "atoll") {
+    G.island = { name: "Motu Iti", type: "atoll", fertility: 0.6, fish: 1.4, fishCap: 10, popCap: 20, forestMax: 45, forestStock: 40, drought: 0, final: false, shapeSeed: 12345 };
+    G.jobs = { fisher: 5, farmer: 1, woodcutter: 1, builder: 0, scout: 1, navigator: 1 };
+  } else if (state === "depart") {
+    G.pop = 16;
+    G.food = 120;
+    G.canoe.progress = 80;
+    G.candidates[1].tier = 2;
+    G.candidates[1].estDist = G.candidates[1].dist * 1.1;
+    G.scoutTarget = 1;
+    renderAll();
+    showDepartModal();
+  } else if (state === "voyage" || state === "storm") {
+    G.canoe.progress = 80;
+    G.candidates[0].tier = 3;
+    G.candidates[0].estDist = G.candidates[0].dist;
+    depart(0, 12, 40);
+    G.voyage.day = 4;
+    G.voyage.progress = 4;
+    if (state === "storm") G.voyage.weather = "storm";
+  }
+  renderAll();
+  initRender(document.getElementById("scene"));
+});
+</script>
+</body>
+</html>
