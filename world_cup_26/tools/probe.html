@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!-- Dev tool: runs the real game pipeline synchronously (no rAF) so headless
+     Chromium can inspect it, e.g.:
+     chromium --headless=new --virtual-time-budget=10000 --dump-dom tools/probe.html
+     chromium --headless=new --virtual-time-budget=10000 --screenshot=out.png tools/probe.html -->
+<html>
+<head><meta charset="UTF-8"><title>probe</title></head>
+<body>
+  <canvas id="game" width="960" height="600"></canvas>
+  <pre id="out">PENDING</pre>
+  <script>var WC = {};</script>
+  <script src="../js/assetData.js"></script>
+  <script src="../js/constants.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/teams.js"></script>
+  <script src="../js/squads.js"></script>
+  <script src="../js/entities.js"></script>
+  <script src="../js/ai.js"></script>
+  <script src="../js/match.js"></script>
+  <script src="../js/input.js"></script>
+  <script src="../js/assets.js"></script>
+  <script src="../js/audio.js"></script>
+  <script src="../js/render.js"></script>
+  <script src="../js/screens.js"></script>
+  <script>
+    window.addEventListener("DOMContentLoaded", function () {
+      WC.Assets.load(function () {
+        WC.Render.init(document.getElementById("game"));
+        WC.Input.init();
+        WC.Screens.boot();
+        WC.Screens.debugJump("#action");
+
+        for (var i = 0; i < 90; i++) {
+          WC.Screens.update(1 / 60);
+          WC.Screens.draw();
+        }
+
+        var m = WC.Screens.state.match;
+        var lines = [];
+        if (!m) {
+          lines.push("PROBE no match");
+        } else {
+          lines.push("PROBE state=" + m.state + " clock=" + m.clock.toFixed(1) +
+            " ball=" + m.ball.x.toFixed(1) + "," + m.ball.y.toFixed(1) +
+            " ctl=" + m.controlled);
+          m.players.forEach(function (p) {
+            lines.push("PROBE p t" + p.team + " s" + p.slot + " " +
+              p.x.toFixed(1) + "," + p.y.toFixed(1) + " face=" + p.facing.toFixed(2));
+          });
+          var spr = WC.Assets.playerSprite(1, "#F8D22A");
+          var px = spr.getContext("2d").getImageData(0, 0, spr.width, spr.height).data;
+          var opaque = 0;
+          for (var q = 3; q < px.length; q += 4) if (px[q] > 0) opaque++;
+          lines.push("PROBE sprite recolor opaque-px=" + opaque);
+        }
+        document.getElementById("out").textContent = lines.join("\n");
+      });
+    });
+  </script>
+</body>
+</html>

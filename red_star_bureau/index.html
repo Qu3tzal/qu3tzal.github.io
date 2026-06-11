@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Red Star Bureau</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='13' font-size='14' fill='%23b3232a'%3E★%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Staatliches&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header id="topbar">
+    <div class="brand">
+      <span class="star">★</span>
+      <div>
+        <h1>Red Star Bureau</h1>
+        <span id="hdr-bureau" class="sub"></span>
+      </div>
+    </div>
+    <div class="hdr-stats">
+      <span id="hdr-date"></span>
+      <span id="hdr-funds"></span>
+      <span id="hdr-rep"></span>
+    </div>
+    <div class="hdr-actions">
+      <button id="btn-endmonth" class="primary big">End Month ▶</button>
+      <button id="btn-newgame" title="Start a new game">New Game</button>
+    </div>
+  </header>
+
+  <nav id="tabs">
+    <button data-tab="dashboard" class="active">Dashboard</button>
+    <button data-tab="contracts">Contracts</button>
+    <button data-tab="workshop">Workshop</button>
+    <button data-tab="staff">Staff</button>
+    <button data-tab="research">Research</button>
+    <button data-tab="fleet">Fleet</button>
+  </nav>
+
+  <main id="view"></main>
+  <div id="modal-root"></div>
+
+  <script src="data.js"></script>
+  <script src="planes.js"></script>
+  <script src="game.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>

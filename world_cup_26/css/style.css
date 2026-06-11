@@ -1,0 +1,26 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #0d1120;
+  overflow: hidden;
+}
+
+#wrap {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#game {
+  image-rendering: pixelated;
+  border-radius: 6px;
+  box-shadow: 0 12px 60px rgba(0, 0, 0, 0.6);
+}
+
+#loading {
+  position: absolute;
+  color: #8fa0c0;
+  font: bold 16px "Arial Black", sans-serif;
+}

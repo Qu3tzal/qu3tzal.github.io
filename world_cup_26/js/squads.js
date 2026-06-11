@@ -1,0 +1,348 @@
+"use strict";
+// Manager-mode squads: real internationals with their 2025/26 season clubs
+// (as known at build time - football moves fast, treat as flavor not gospel).
+// Row: [name, club, pos, PAC, ATT, DEF, likes, hates]
+//   pos: GK CB LB RB CDM CM CAM LM RM LW RW ST
+//   likes/hates: formation the player thrives in / struggles in (or null)
+
+WC.SQUAD_DATA = {
+  FRA: [
+    ["M. Maignan", "AC Milan", "GK", 62, 30, 89, "4-3-3", null],
+    ["B. Samba", "Rennes", "GK", 58, 26, 83, "5-3-2", null],
+    ["W. Saliba", "Arsenal", "CB", 80, 55, 89, "4-3-3", null],
+    ["D. Upamecano", "Bayern", "CB", 82, 52, 86, null, "5-3-2"],
+    ["I. Konaté", "Liverpool", "CB", 81, 50, 85, "4-3-3", null],
+    ["J. Koundé", "Barcelona", "RB", 84, 68, 84, "4-3-3", "5-3-2"],
+    ["T. Hernandez", "Al-Hilal", "LB", 90, 74, 78, "5-3-2", "4-4-2"],
+    ["A. Tchouaméni", "Real Madrid", "CDM", 78, 70, 86, "4-3-3", null],
+    ["E. Camavinga", "Real Madrid", "CM", 84, 74, 80, "4-3-3", null],
+    ["A. Griezmann", "Atlético", "CAM", 74, 86, 62, "4-4-2", "5-3-2"],
+    ["W. Zaïre-Emery", "PSG", "CM", 82, 76, 74, null, null],
+    ["M. Koné", "AS Roma", "CM", 83, 72, 76, "5-3-2", null],
+    ["K. Mbappé", "Real Madrid", "ST", 97, 95, 38, "4-3-3", "5-3-2"],
+    ["O. Dembélé", "PSG", "RW", 92, 90, 45, "4-3-3", "5-3-2"],
+    ["B. Barcola", "PSG", "LW", 91, 84, 40, "4-3-3", null],
+    ["M. Thuram", "Inter", "ST", 87, 86, 50, "4-4-2", null],
+  ],
+  BRA: [
+    ["Alisson", "Liverpool", "GK", 60, 32, 90, null, null],
+    ["Ederson", "Fenerbahçe", "GK", 62, 40, 85, "4-3-3", null],
+    ["Marquinhos", "PSG", "CB", 78, 56, 88, "4-3-3", null],
+    ["Gabriel", "Arsenal", "CB", 77, 58, 88, "4-4-2", null],
+    ["É. Militão", "Real Madrid", "CB", 83, 52, 85, null, null],
+    ["Wesley", "AS Roma", "RB", 88, 66, 78, "5-3-2", null],
+    ["G. Arana", "Atlético-MG", "LB", 84, 68, 76, "5-3-2", "4-4-2"],
+    ["Casemiro", "Man United", "CDM", 64, 66, 85, "4-4-2", "4-3-3"],
+    ["Bruno Guimarães", "Newcastle", "CM", 76, 80, 80, "4-3-3", null],
+    ["L. Paquetá", "West Ham", "CAM", 78, 82, 62, "4-3-3", null],
+    ["André", "Wolves", "CDM", 74, 64, 82, "5-3-2", null],
+    ["Gerson", "Zenit", "CM", 75, 76, 72, null, null],
+    ["Vinícius Jr", "Real Madrid", "LW", 95, 94, 36, "4-3-3", "5-3-2"],
+    ["Rodrygo", "Real Madrid", "RW", 90, 87, 42, "4-3-3", null],
+    ["Raphinha", "Barcelona", "RW", 88, 90, 52, "4-3-3", "5-3-2"],
+    ["Estêvão", "Chelsea", "RW", 91, 85, 35, "4-3-3", "5-3-2"],
+  ],
+  ARG: [
+    ["E. Martínez", "Aston Villa", "GK", 61, 34, 89, null, null],
+    ["G. Rulli", "Marseille", "GK", 59, 30, 83, null, null],
+    ["C. Romero", "Tottenham", "CB", 80, 58, 88, "4-3-3", null],
+    ["N. Otamendi", "Benfica", "CB", 68, 50, 84, "5-3-2", "4-3-3"],
+    ["L. Martínez", "Man United", "CB", 77, 56, 86, "5-3-2", null],
+    ["N. Molina", "Atlético", "RB", 86, 64, 77, "4-4-2", null],
+    ["N. Tagliafico", "Lyon", "LB", 78, 60, 80, "4-4-2", null],
+    ["R. De Paul", "Inter Miami", "CM", 79, 78, 76, "4-4-2", null],
+    ["E. Fernández", "Chelsea", "CM", 76, 82, 78, "4-3-3", null],
+    ["A. Mac Allister", "Liverpool", "CM", 77, 84, 76, "4-3-3", null],
+    ["L. Paredes", "Boca Juniors", "CDM", 68, 72, 78, "5-3-2", null],
+    ["G. Lo Celso", "Real Betis", "CAM", 75, 80, 62, null, "5-3-2"],
+    ["L. Messi", "Inter Miami", "RW", 80, 96, 30, "4-3-3", "5-3-2"],
+    ["J. Álvarez", "Atlético", "ST", 86, 90, 58, "4-4-2", null],
+    ["L. Martínez", "Inter", "ST", 84, 89, 52, "4-4-2", null],
+    ["A. Garnacho", "Chelsea", "LW", 90, 82, 38, "4-3-3", null],
+  ],
+  ENG: [
+    ["J. Pickford", "Everton", "GK", 60, 34, 87, null, null],
+    ["D. Henderson", "Crystal Palace", "GK", 58, 30, 82, "5-3-2", null],
+    ["J. Stones", "Man City", "CB", 76, 64, 85, "4-3-3", null],
+    ["M. Guéhi", "Crystal Palace", "CB", 78, 54, 87, "5-3-2", null],
+    ["E. Konsa", "Aston Villa", "CB", 80, 50, 83, null, null],
+    ["K. Walker", "Burnley", "RB", 86, 54, 79, "5-3-2", null],
+    ["M. Lewis-Skelly", "Arsenal", "LB", 82, 64, 78, "4-3-3", null],
+    ["D. Rice", "Arsenal", "CDM", 78, 76, 87, "4-3-3", null],
+    ["J. Bellingham", "Real Madrid", "CAM", 84, 90, 74, "4-3-3", "5-3-2"],
+    ["P. Foden", "Man City", "CAM", 83, 86, 52, "4-3-3", "5-3-2"],
+    ["C. Palmer", "Chelsea", "CAM", 82, 89, 48, "4-4-2", "5-3-2"],
+    ["M. Rogers", "Aston Villa", "CAM", 84, 80, 56, null, null],
+    ["H. Kane", "Bayern", "ST", 72, 95, 50, "4-4-2", null],
+    ["B. Saka", "Arsenal", "RW", 89, 89, 54, "4-3-3", "5-3-2"],
+    ["A. Gordon", "Newcastle", "LW", 92, 82, 46, "4-3-3", null],
+    ["O. Watkins", "Aston Villa", "ST", 87, 84, 44, "4-4-2", null],
+  ],
+  ESP: [
+    ["U. Simón", "Athletic Club", "GK", 60, 36, 87, "4-3-3", null],
+    ["D. Raya", "Arsenal", "GK", 61, 38, 86, "4-3-3", null],
+    ["D. Carvajal", "Real Madrid", "RB", 78, 62, 84, "4-4-2", null],
+    ["R. Le Normand", "Atlético", "CB", 74, 52, 85, null, null],
+    ["A. Laporte", "Athletic Club", "CB", 70, 56, 84, "5-3-2", null],
+    ["P. Cubarsí", "Barcelona", "CB", 78, 60, 86, "4-3-3", "5-3-2"],
+    ["M. Cucurella", "Chelsea", "LB", 82, 62, 82, "4-3-3", null],
+    ["Rodri", "Man City", "CDM", 70, 82, 90, "4-3-3", "4-4-2"],
+    ["Pedri", "Barcelona", "CM", 78, 88, 70, "4-3-3", "4-4-2"],
+    ["F. Ruiz", "PSG", "CM", 72, 82, 74, "4-3-3", null],
+    ["M. Merino", "Arsenal", "CM", 72, 76, 78, "4-4-2", null],
+    ["M. Zubimendi", "Arsenal", "CDM", 71, 74, 84, "4-3-3", null],
+    ["L. Yamal", "Barcelona", "RW", 90, 94, 38, "4-3-3", "5-3-2"],
+    ["N. Williams", "Athletic Club", "LW", 93, 85, 40, "4-3-3", "5-3-2"],
+    ["Á. Morata", "Como", "ST", 78, 80, 46, "4-4-2", null],
+    ["M. Oyarzabal", "Real Sociedad", "ST", 80, 84, 52, "4-4-2", null],
+  ],
+  GER: [
+    ["M. ter Stegen", "Barcelona", "GK", 58, 40, 87, "4-3-3", null],
+    ["O. Baumann", "Hoffenheim", "GK", 57, 28, 82, null, null],
+    ["A. Rüdiger", "Real Madrid", "CB", 80, 52, 87, null, null],
+    ["J. Tah", "Bayern", "CB", 76, 50, 86, "4-3-3", null],
+    ["N. Schlotterbeck", "Dortmund", "CB", 78, 58, 84, "5-3-2", null],
+    ["W. Anton", "Dortmund", "CB", 74, 48, 82, "5-3-2", "4-3-3"],
+    ["D. Raum", "RB Leipzig", "LB", 84, 64, 77, "5-3-2", null],
+    ["J. Kimmich", "Bayern", "CDM", 72, 80, 84, "4-3-3", null],
+    ["L. Goretzka", "Bayern", "CM", 76, 76, 78, "4-4-2", null],
+    ["F. Wirtz", "Liverpool", "CAM", 85, 91, 55, "4-3-3", "5-3-2"],
+    ["J. Musiala", "Bayern", "CAM", 86, 90, 50, "4-3-3", "5-3-2"],
+    ["A. Stiller", "Stuttgart", "CDM", 70, 74, 79, "4-3-3", null],
+    ["K. Havertz", "Arsenal", "ST", 80, 83, 58, "4-3-3", null],
+    ["N. Füllkrug", "West Ham", "ST", 70, 81, 45, "4-4-2", "4-3-3"],
+    ["N. Woltemade", "Newcastle", "ST", 76, 84, 48, "4-4-2", null],
+    ["K. Adeyemi", "Dortmund", "LW", 94, 81, 40, "4-3-3", null],
+  ],
+  POR: [
+    ["D. Costa", "FC Porto", "GK", 62, 36, 87, "4-3-3", null],
+    ["José Sá", "Wolves", "GK", 58, 30, 82, null, null],
+    ["R. Dias", "Man City", "CB", 74, 54, 89, "4-3-3", null],
+    ["G. Inácio", "Sporting CP", "CB", 79, 58, 84, "5-3-2", null],
+    ["N. Mendes", "PSG", "LB", 92, 72, 82, "4-3-3", null],
+    ["J. Cancelo", "Al-Hilal", "RB", 85, 72, 74, "4-3-3", "5-3-2"],
+    ["D. Dalot", "Man United", "RB", 83, 62, 79, "5-3-2", null],
+    ["Vitinha", "PSG", "CM", 78, 86, 76, "4-3-3", "5-3-2"],
+    ["B. Fernandes", "Man United", "CAM", 75, 89, 64, "4-4-2", null],
+    ["B. Silva", "Man City", "CAM", 80, 85, 66, "4-3-3", null],
+    ["J. Neves", "PSG", "CM", 81, 82, 78, "4-3-3", null],
+    ["J. Palhinha", "Tottenham", "CDM", 72, 64, 86, "4-4-2", "4-3-3"],
+    ["C. Ronaldo", "Al-Nassr", "ST", 80, 92, 35, "4-4-2", "5-3-2"],
+    ["R. Leão", "AC Milan", "LW", 93, 86, 38, "4-3-3", "5-3-2"],
+    ["P. Neto", "Chelsea", "RW", 91, 80, 42, "4-3-3", null],
+    ["G. Ramos", "PSG", "ST", 81, 83, 46, "4-4-2", null],
+  ],
+  NED: [
+    ["B. Verbruggen", "Brighton", "GK", 60, 32, 84, "4-3-3", null],
+    ["M. Flekken", "Leverkusen", "GK", 57, 30, 82, null, null],
+    ["V. van Dijk", "Liverpool", "CB", 78, 60, 91, "4-3-3", null],
+    ["S. de Vrij", "Inter", "CB", 70, 50, 84, "5-3-2", null],
+    ["N. Aké", "Man City", "CB", 76, 54, 84, null, null],
+    ["D. Dumfries", "Inter", "RB", 87, 70, 78, "5-3-2", "4-3-3"],
+    ["M. van de Ven", "Tottenham", "CB", 94, 50, 84, "4-3-3", null],
+    ["F. de Jong", "Barcelona", "CM", 78, 82, 78, "4-3-3", "4-4-2"],
+    ["T. Reijnders", "Man City", "CM", 80, 83, 72, "4-3-3", null],
+    ["X. Simons", "Tottenham", "CAM", 84, 84, 54, "4-3-3", "5-3-2"],
+    ["R. Gravenberch", "Liverpool", "CDM", 80, 76, 82, "4-3-3", null],
+    ["T. Koopmeiners", "Juventus", "CM", 74, 78, 74, "4-4-2", null],
+    ["M. Depay", "Corinthians", "ST", 80, 84, 40, "4-4-2", null],
+    ["C. Gakpo", "Liverpool", "LW", 86, 85, 48, "4-3-3", null],
+    ["B. Brobbey", "Sunderland", "ST", 82, 78, 44, "4-4-2", "4-3-3"],
+    ["W. Weghorst", "Ajax", "ST", 68, 76, 48, "4-4-2", "4-3-3"],
+  ],
+  ITA: [
+    ["G. Donnarumma", "Man City", "GK", 60, 32, 90, null, null],
+    ["G. Vicario", "Tottenham", "GK", 59, 30, 84, "4-3-3", null],
+    ["A. Bastoni", "Inter", "CB", 78, 62, 87, "5-3-2", "4-4-2"],
+    ["R. Calafiori", "Arsenal", "CB", 80, 62, 83, "4-3-3", null],
+    ["G. Di Lorenzo", "Napoli", "RB", 80, 62, 82, "5-3-2", null],
+    ["F. Dimarco", "Inter", "LB", 84, 70, 78, "5-3-2", "4-4-2"],
+    ["A. Buongiorno", "Napoli", "CB", 76, 50, 86, "5-3-2", null],
+    ["N. Barella", "Inter", "CM", 80, 84, 78, "4-3-3", null],
+    ["S. Tonali", "Newcastle", "CM", 77, 80, 82, "4-3-3", null],
+    ["M. Locatelli", "Juventus", "CDM", 70, 72, 80, "4-4-2", null],
+    ["D. Frattesi", "Inter", "CM", 81, 78, 70, "4-4-2", null],
+    ["S. Ricci", "AC Milan", "CDM", 72, 70, 78, null, null],
+    ["M. Retegui", "Al-Qadsiah", "ST", 80, 85, 45, "4-4-2", null],
+    ["M. Kean", "Fiorentina", "ST", 86, 83, 42, "4-4-2", null],
+    ["F. Chiesa", "Liverpool", "RW", 88, 82, 44, "4-3-3", "5-3-2"],
+    ["G. Raspadori", "Atlético", "ST", 80, 79, 46, "4-3-3", null],
+  ],
+  JPN: [
+    ["Z. Suzuki", "Parma", "GK", 61, 32, 84, "4-3-3", null],
+    ["S. Gonda", "Shimizu", "GK", 56, 26, 80, "5-3-2", null],
+    ["K. Itakura", "Ajax", "CB", 76, 52, 84, "4-3-3", null],
+    ["K. Machida", "Hoffenheim", "CB", 75, 50, 83, "5-3-2", null],
+    ["Y. Sugawara", "Southampton", "RB", 84, 62, 77, null, null],
+    ["T. Watanabe", "Feyenoord", "CB", 77, 54, 81, null, null],
+    ["A. Seko", "Le Havre", "CB", 74, 46, 80, "5-3-2", "4-3-3"],
+    ["W. Endo", "Liverpool", "CDM", 70, 64, 84, "4-4-2", null],
+    ["D. Kamada", "Crystal Palace", "CAM", 76, 82, 66, "4-3-3", null],
+    ["T. Kubo", "Real Sociedad", "RW", 86, 85, 50, "4-3-3", "5-3-2"],
+    ["K. Mitoma", "Brighton", "LM", 90, 84, 46, "4-3-3", "5-3-2"],
+    ["H. Morita", "Sporting CP", "CM", 74, 76, 76, "4-3-3", null],
+    ["A. Ueda", "Feyenoord", "ST", 82, 81, 48, "4-4-2", null],
+    ["T. Minamino", "Monaco", "CF", 80, 80, 52, "4-3-3", null],
+    ["R. Doan", "Frankfurt", "RW", 84, 80, 50, "4-3-3", null],
+    ["K. Ogawa", "NEC", "ST", 78, 76, 42, "4-4-2", null],
+  ],
+  MAR: [
+    ["Y. Bounou", "Al-Hilal", "GK", 60, 32, 87, null, null],
+    ["M. Benabid", "Wydad AC", "GK", 56, 26, 78, "5-3-2", null],
+    ["A. Hakimi", "PSG", "RB", 93, 80, 82, "4-3-3", "4-4-2"],
+    ["N. Mazraoui", "Man United", "RB", 82, 60, 81, null, null],
+    ["N. Aguerd", "Marseille", "CB", 76, 52, 85, "5-3-2", null],
+    ["A. Dari", "Al-Ahli", "CB", 74, 50, 80, "5-3-2", null],
+    ["A. Masina", "Torino", "CB", 70, 46, 78, "5-3-2", "4-3-3"],
+    ["S. Amrabat", "Real Betis", "CDM", 76, 62, 84, "4-4-2", null],
+    ["A. Ounahi", "Girona", "CM", 80, 78, 68, "4-3-3", null],
+    ["B. El Khannouss", "Stuttgart", "CAM", 82, 82, 58, "4-3-3", "5-3-2"],
+    ["E. Ben Seghir", "Leverkusen", "CAM", 87, 80, 48, "4-3-3", null],
+    ["S. Amallah", "Valladolid", "CM", 74, 72, 66, null, null],
+    ["Y. En-Nesyri", "Fenerbahçe", "ST", 84, 83, 48, "4-4-2", null],
+    ["Brahim Díaz", "Real Madrid", "RW", 86, 84, 44, "4-3-3", "5-3-2"],
+    ["A. Ezzalzouli", "Real Betis", "LW", 89, 76, 40, "4-3-3", null],
+    ["S. Rahimi", "Al-Ain", "ST", 85, 78, 44, "4-4-2", null],
+  ],
+  CRO: [
+    ["D. Livaković", "Girona", "GK", 59, 30, 85, null, null],
+    ["D. Kotarski", "Copenhagen", "GK", 57, 28, 80, null, null],
+    ["J. Gvardiol", "Man City", "CB", 84, 64, 87, "4-3-3", null],
+    ["J. Šutalo", "Ajax", "CB", 76, 50, 81, null, null],
+    ["M. Pongračić", "Fiorentina", "CB", 74, 48, 80, "5-3-2", null],
+    ["J. Stanišić", "Bayern", "RB", 80, 56, 81, "5-3-2", null],
+    ["I. Perišić", "PSV", "LM", 78, 76, 62, "5-3-2", "4-3-3"],
+    ["L. Modrić", "AC Milan", "CM", 70, 88, 68, "4-3-3", "4-4-2"],
+    ["M. Kovačić", "Man City", "CM", 76, 80, 74, "4-3-3", null],
+    ["M. Brozović", "Al-Nassr", "CDM", 72, 70, 80, "5-3-2", null],
+    ["M. Baturina", "Como", "CAM", 78, 80, 54, "4-3-3", "5-3-2"],
+    ["P. Sučić", "Inter", "CM", 76, 76, 70, null, null],
+    ["A. Kramarić", "Hoffenheim", "ST", 74, 82, 48, "4-4-2", null],
+    ["A. Budimir", "Osasuna", "ST", 74, 78, 44, "4-4-2", "4-3-3"],
+    ["I. Matanović", "Frankfurt", "ST", 78, 74, 42, "4-4-2", null],
+    ["F. Ivanović", "Benfica", "LW", 85, 76, 40, "4-3-3", null],
+  ],
+  BEL: [
+    ["T. Courtois", "Real Madrid", "GK", 60, 34, 91, null, null],
+    ["K. Casteels", "Al-Qadsiah", "GK", 57, 28, 83, null, null],
+    ["Z. Debast", "Sporting CP", "CB", 76, 56, 81, "4-3-3", null],
+    ["A. Theate", "Frankfurt", "CB", 74, 52, 81, "5-3-2", null],
+    ["T. Castagne", "Fulham", "RB", 81, 58, 79, "4-4-2", null],
+    ["M. De Cuyper", "Brighton", "LB", 82, 64, 77, null, null],
+    ["W. Faes", "Leicester", "CB", 76, 46, 79, "5-3-2", "4-3-3"],
+    ["K. De Bruyne", "Napoli", "CAM", 74, 93, 60, "4-3-3", "5-3-2"],
+    ["A. Onana", "Aston Villa", "CDM", 78, 70, 82, "4-4-2", null],
+    ["Y. Tielemans", "Aston Villa", "CM", 72, 80, 72, "4-3-3", null],
+    ["J. Doku", "Man City", "LW", 95, 80, 42, "4-3-3", "5-3-2"],
+    ["H. Vanaken", "Club Brugge", "CAM", 66, 78, 62, "4-4-2", null],
+    ["R. Lukaku", "Napoli", "ST", 82, 87, 42, "4-4-2", "5-3-2"],
+    ["L. Openda", "Juventus", "ST", 91, 81, 40, "4-4-2", null],
+    ["L. Trossard", "Arsenal", "LW", 83, 80, 48, "4-3-3", null],
+    ["C. De Ketelaere", "Atalanta", "CF", 81, 81, 52, "4-3-3", null],
+  ],
+  USA: [
+    ["M. Turner", "NE Revolution", "GK", 59, 28, 84, null, null],
+    ["Z. Steffen", "Colorado", "GK", 58, 27, 80, null, null],
+    ["S. Dest", "PSV", "RB", 87, 66, 74, "4-3-3", "5-3-2"],
+    ["C. Richards", "Crystal Palace", "CB", 78, 50, 82, "5-3-2", null],
+    ["T. Ream", "Charlotte FC", "CB", 64, 48, 80, "5-3-2", "4-3-3"],
+    ["A. Robinson", "Fulham", "LB", 88, 64, 80, "4-3-3", null],
+    ["J. Scally", "Gladbach", "RB", 80, 54, 77, null, null],
+    ["T. Adams", "Bournemouth", "CDM", 76, 62, 83, "4-4-2", null],
+    ["W. McKennie", "Juventus", "CM", 78, 72, 74, "4-4-2", null],
+    ["Y. Musah", "Atalanta", "CM", 84, 68, 70, "4-3-3", null],
+    ["G. Reyna", "Parma", "CAM", 76, 78, 54, "4-3-3", "5-3-2"],
+    ["J. Cardoso", "Atlético", "CDM", 74, 66, 80, "4-4-2", null],
+    ["C. Pulisic", "AC Milan", "RW", 88, 86, 46, "4-3-3", "5-3-2"],
+    ["T. Weah", "Marseille", "RW", 89, 74, 50, "4-3-3", null],
+    ["F. Balogun", "Monaco", "ST", 86, 79, 40, "4-4-2", null],
+    ["R. Pepi", "PSV", "ST", 82, 78, 38, "4-4-2", null],
+  ],
+  MEX: [
+    ["L. Malagón", "América", "GK", 58, 28, 83, null, null],
+    ["T. Rangel", "Chivas", "GK", 56, 26, 78, null, null],
+    ["C. Montes", "Lokomotiv", "CB", 76, 52, 82, "5-3-2", null],
+    ["J. Vásquez", "Genoa", "CB", 75, 54, 81, "5-3-2", null],
+    ["J. Gallardo", "Toluca", "LB", 80, 58, 75, null, null],
+    ["J. Sánchez", "Cruz Azul", "RB", 81, 56, 74, "4-4-2", null],
+    ["J. Araujo", "Bournemouth", "RB", 83, 58, 75, "4-3-3", null],
+    ["E. Álvarez", "Fenerbahçe", "CDM", 74, 66, 85, "4-4-2", null],
+    ["L. Chávez", "Dynamo Moscow", "CM", 74, 76, 68, "4-4-2", null],
+    ["G. Mora", "Tijuana", "CAM", 84, 82, 52, "4-3-3", "5-3-2"],
+    ["C. Rodríguez", "Cruz Azul", "CM", 72, 72, 70, null, null],
+    ["E. Lira", "Cruz Azul", "CDM", 73, 64, 77, "5-3-2", null],
+    ["R. Jiménez", "Fulham", "ST", 76, 82, 46, "4-4-2", null],
+    ["S. Giménez", "AC Milan", "ST", 83, 82, 44, "4-4-2", "5-3-2"],
+    ["H. Lozano", "San Diego FC", "RW", 88, 78, 42, "4-3-3", null],
+    ["A. Vega", "Toluca", "LW", 84, 78, 44, "4-3-3", null],
+  ],
+  CAN: [
+    ["M. Crépeau", "Portland", "GK", 58, 27, 81, null, null],
+    ["D. St. Clair", "Minnesota", "GK", 57, 26, 79, null, null],
+    ["A. Davies", "Bayern", "LB", 96, 78, 80, "4-3-3", "4-4-2"],
+    ["A. Johnston", "Celtic", "RB", 82, 58, 79, "4-4-2", null],
+    ["M. Bombito", "Nice", "CB", 84, 48, 81, "5-3-2", null],
+    ["R. Laryea", "Toronto FC", "RB", 83, 56, 74, null, null],
+    ["D. Cornelius", "Marseille", "CB", 75, 46, 79, "5-3-2", null],
+    ["S. Eustáquio", "FC Porto", "CM", 74, 74, 74, "4-3-3", null],
+    ["I. Koné", "Rennes", "CM", 80, 70, 70, "4-3-3", null],
+    ["T. Buchanan", "Villarreal", "RM", 88, 74, 56, "4-3-3", "5-3-2"],
+    ["M. Choinière", "Grasshopper", "CM", 74, 68, 68, null, null],
+    ["N. Sigur", "Hajduk Split", "CDM", 72, 60, 74, "5-3-2", null],
+    ["J. David", "Juventus", "ST", 86, 86, 48, "4-4-2", "5-3-2"],
+    ["C. Larin", "Mallorca", "ST", 78, 76, 42, "4-4-2", null],
+    ["P. David", "Union SG", "ST", 84, 74, 40, "4-4-2", null],
+    ["T. Oluwaseyi", "Villarreal", "ST", 87, 72, 38, "4-3-3", null],
+  ],
+};
+
+// position string -> sim role
+WC.posRole = function (pos) {
+  if (pos === "GK") return "GK";
+  if (pos === "CB" || pos === "LB" || pos === "RB" || pos === "LWB" || pos === "RWB") return "DF";
+  if (pos === "ST" || pos === "CF" || pos === "LW" || pos === "RW") return "FW";
+  return "MF";
+};
+
+// Build live squad objects (with stamina/knock state) for a cup run.
+WC.buildSquad = function (teamId) {
+  var rows = WC.SQUAD_DATA[teamId];
+  return rows.map(function (r, i) {
+    var role = WC.posRole(r[2]);
+    var pac = r[3], att = r[4], def = r[5];
+    var ovr;
+    if (role === "GK") ovr = def * 0.8 + pac * 0.1 + att * 0.1;
+    else if (role === "DF") ovr = def * 0.62 + pac * 0.23 + att * 0.15;
+    else if (role === "MF") ovr = att * 0.40 + def * 0.30 + pac * 0.30;
+    else ovr = att * 0.62 + pac * 0.28 + def * 0.10;
+    return {
+      id: teamId + i,
+      name: r[0], club: r[1], pos: r[2], role: role,
+      pac: pac, att: att, def: def,
+      ovr: Math.round(ovr),
+      likes: r[6], hates: r[7],
+      stamina: 100,
+      knock: 0, knockT: 0,
+      onField: false,
+    };
+  });
+};
+
+// Auto-pick the best XI for a formation (used for AI teams & the default XI).
+// Returns an array of persons aligned with the formation slots.
+WC.pickXI = function (squad, formation, formationName) {
+  var taken = {};
+  return formation.map(function (slot) {
+    var best = null, bs = -1e9;
+    for (var i = 0; i < squad.length; i++) {
+      var q = squad[i];
+      if (taken[q.id] || q.knock === 2) continue;
+      var fit = q.role === slot.role ? 0 : (q.role === "MF" || slot.role === "MF") ? -14 : -28;
+      var aff = q.likes === formationName ? 4 : q.hates === formationName ? -4 : 0;
+      var s = q.ovr + fit + aff + q.stamina * 0.1;
+      if (s > bs) { bs = s; best = q; }
+    }
+    if (best) taken[best.id] = true;
+    return best;
+  });
+};

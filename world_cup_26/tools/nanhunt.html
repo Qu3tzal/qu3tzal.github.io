@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<!-- Dev tool: run the real rAF loop and report the first NaN/out-of-bounds
+     player or ball state, with the dt values that led up to it. -->
+<html>
+<head><meta charset="UTF-8"><title>nanhunt</title></head>
+<body>
+  <canvas id="game" width="960" height="600"></canvas>
+  <pre id="out">PENDING</pre>
+  <script>var WC = {};</script>
+  <script src="../js/assetData.js"></script>
+  <script src="../js/constants.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/teams.js"></script>
+  <script src="../js/squads.js"></script>
+  <script src="../js/entities.js"></script>
+  <script src="../js/ai.js"></script>
+  <script src="../js/match.js"></script>
+  <script src="../js/input.js"></script>
+  <script src="../js/assets.js"></script>
+  <script src="../js/audio.js"></script>
+  <script src="../js/render.js"></script>
+  <script src="../js/screens.js"></script>
+  <script>
+    var out = [];
+    function log(s) { out.push(s); document.getElementById("out").textContent = out.join("\n"); }
+
+    window.addEventListener("DOMContentLoaded", function () {
+      WC.Assets.load(function () {
+        WC.Render.init(document.getElementById("game"));
+        WC.Input.init();
+        WC.Screens.boot();
+        WC.Screens.debugJump("#action");
+
+        var F = WC.CONST.FIELD;
+        var last = performance.now();
+        var frames = 0;
+        var dts = [];
+        var found = false;
+
+        function check(m) {
+          if (!m) return "no-match";
+          if (!isFinite(m.ball.x) || !isFinite(m.ball.y) || !isFinite(m.ball.vx) || !isFinite(m.ball.vy)) {
+            return "BALL " + m.ball.x + "," + m.ball.y + " v=" + m.ball.vx + "," + m.ball.vy;
+          }
+          for (var i = 0; i < m.players.length; i++) {
+            var p = m.players[i];
+            if (!isFinite(p.x) || !isFinite(p.y) || !isFinite(p.facing) || !isFinite(p.vx)) {
+              return "PLAYER t" + p.team + " s" + p.slot + " " + p.x + "," + p.y + " v=" + p.vx + "," + p.vy + " face=" + p.facing + " move=" + p.moveX + "," + p.moveY;
+            }
+            if (p.x < F.left - 14 || p.x > F.right + 14 || p.y < F.top - 14 || p.y > F.bottom + 14) {
+              return "OOB t" + p.team + " s" + p.slot + " " + p.x.toFixed(1) + "," + p.y.toFixed(1) + " state=" + m.state;
+            }
+          }
+          return null;
+        }
+
+        function frame(now) {
+          var dt = Math.min((now - last) / 1000, 0.05);
+          last = now;
+          dts.push(dt.toFixed(4));
+          if (dts.length > 8) dts.shift();
+
+          WC.Screens.update(dt);
+          WC.Screens.draw();
+          frames++;
+
+          if (!found) {
+            var bad = check(WC.Screens.state.match);
+            if (bad) {
+              found = true;
+              log("HUNT FAIL frame=" + frames + " " + bad);
+              log("HUNT recent dts: " + dts.join(" "));
+              var m = WC.Screens.state.match;
+              log("HUNT state=" + m.state + " restart=" + (m.restart && m.restart.kind) + " clock=" + m.clock.toFixed(2));
+              return;
+            }
+          }
+          document.getElementById("out").textContent = "RUNNING frame=" + frames + " state=" + (WC.Screens.state.match ? WC.Screens.state.match.state : "?") + "\n" + out.join("\n");
+          if (frames < 2400) requestAnimationFrame(frame);
+          else log("HUNT CLEAN after " + frames + " frames, state=" + WC.Screens.state.match.state + " score=" + WC.Screens.state.match.score);
+        }
+        requestAnimationFrame(frame);
+      });
+    });
+  </script>
+</body>
+</html>
