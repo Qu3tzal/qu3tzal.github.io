@@ -1,0 +1,1076 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Action-Similarity Supervision for Cross-Embodiment Latent Action Models</title>
+<meta name="description" content="Improving Cross-embodiment Transfer in Latent Action Models with Action-Similarity Supervision — project page. A similarity loss on ground-truth action sequences shapes latent actions so one policy transfers tasks between two robots.">
+<meta property="og:title" content="Improving Cross-embodiment Transfer in Latent Action Models with Action-Similarity Supervision">
+<meta property="og:description" content="Predicting latent actions instead of robot actions more than doubles cross-embodiment success; action-similarity supervision transfers better than predicting the actions.">
+<meta property="og:image" content="assets/method.png"><!-- replace with the absolute URL once deployed -->
+<meta property="og:type" content="article">
+<script>try { if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); } catch (e) {}</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M9 11h14M9 16h14M9 21h14' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+/* ---------- tokens ---------- */
+:root {
+  color-scheme: light;
+  --bg: #f9f9f7;
+  --surface: #fcfcfb;
+  --surface-2: #ffffff;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #6b6a64;
+  --hair: #e1e0d9;
+  --axis: #c3c2b7;
+  --grid: #e1e0d9;
+  --blue: #1f66bd;
+  --blue-wash: #f2f7fe;
+  --orange: #eb6834;
+  --aqua: #1baf7a;
+  --gray-bar: #8f8d85;
+  --ring: rgba(11,11,11,0.10);
+  --shadow: 0 1px 2px rgba(11,11,11,.04), 0 8px 24px rgba(11,11,11,.05);
+  --radius: 12px;
+  --fig-bg: #ffffff;
+}
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #202020;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --hair: #2c2c2a;
+    --axis: #4a4a47;
+    --grid: #2c2c2a;
+    --blue: #3987e5;
+    --blue-wash: #14233a;
+    --orange: #d95926;
+    --aqua: #199e70;
+    --gray-bar: #6f6f6b;
+    --ring: rgba(255,255,255,0.10);
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    --fig-bg: #f4f4f2;
+}
+
+/* ---------- base ---------- */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+img { max-width: 100%; height: auto; display: block; }
+h1, h2, h3 { line-height: 1.15; letter-spacing: -0.015em; margin: 0; }
+h2 { font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.1rem); font-weight: 650; text-wrap: balance; }
+h3 { font-size: 1.1rem; font-weight: 650; }
+p { margin: 0 0 1em; }
+.wrap { width: min(1080px, 100% - 2.5rem); margin-inline: auto; }
+.wrap.wide { width: min(1200px, 100% - 2.5rem); }
+section { padding: clamp(3rem, 6vw, 5.5rem) 0; scroll-margin-top: 52px; }
+section + section { border-top: 1px solid var(--hair); }
+.kicker {
+  font-size: .78rem; font-weight: 650; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--blue); margin-bottom: .6rem;
+}
+.lede { font-size: 1.12rem; color: var(--ink-2); max-width: 62ch; }
+.sec-head { max-width: 64ch; margin-bottom: 2rem; }
+.sec-head h2 { margin-bottom: .6rem; }
+.muted { color: var(--muted); }
+.small { font-size: .9rem; }
+.emph { color: var(--blue); font-weight: 650; }
+.math { font-family: "Times New Roman", Times, "STIX Two Math", serif; font-style: italic; font-size: 1.05em; }
+.math .up { font-style: normal; }
+sub, sup { line-height: 0; font-size: .72em; }
+.pills { display: flex; flex-wrap: wrap; gap: .4rem .5rem; align-items: center; margin-top: 1rem; font-size: .85rem; color: var(--ink-2); }
+.pills .p { border: 1px solid var(--ring); background: var(--surface); border-radius: 999px; padding: .15rem .6rem; color: var(--ink); font-weight: 500; }
+.pills .lbl { font-weight: 650; color: var(--ink-2); margin-right: .2rem; }
+
+/* ---------- nav ---------- */
+.nav {
+  position: sticky; top: 0; z-index: 20;
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px); -webkit-backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--hair);
+}
+.nav .wrap { display: flex; align-items: center; gap: 1.2rem; height: 52px; }
+.nav .brand { font-weight: 650; font-size: .95rem; color: var(--ink); white-space: nowrap; }
+.nav ul { list-style: none; margin: 0 0 0 auto; padding: 0; display: flex; gap: 1.1rem; overflow-x: auto; }
+.nav li a { font-size: .9rem; color: var(--ink-2); white-space: nowrap; }
+.nav li a:hover { color: var(--ink); text-decoration: none; }
+.nav .theme { margin-left: .5rem; flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--ring); background: var(--surface-2); color: var(--ink); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.nav .theme:hover { border-color: var(--blue); color: var(--blue); }
+.nav .theme svg { width: 17px; height: 17px; }
+.nav .theme .moon { display: none; }
+:root[data-theme="dark"] .nav .theme .moon { display: block; }
+:root[data-theme="dark"] .nav .theme .sun { display: none; }
+@media (max-width: 640px) { .nav .brand { display: none; } .nav ul { margin-left: 0; margin-right: auto; } }
+
+/* ---------- hero ---------- */
+.hero { padding-top: clamp(2.5rem, 6vw, 5rem); text-align: center; }
+.hero .venue { color: var(--muted); font-size: .9rem; margin-bottom: 1rem; letter-spacing: .02em; }
+.hero h1 {
+  font-size: clamp(1.75rem, 1.2rem + 2.6vw, 2.9rem); font-weight: 700; letter-spacing: -0.02em;
+  max-width: 30ch; margin: 0 auto 1.2rem; text-wrap: balance;
+}
+.hero .authors { font-size: 1.05rem; color: var(--ink); margin-bottom: .25rem; }
+.hero .authors sup { color: var(--muted); }
+.hero .affil { color: var(--ink-2); margin-bottom: 1.6rem; }
+.links { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; margin-bottom: 2.2rem; }
+.btn {
+  display: inline-flex; align-items: center; gap: .45rem;
+  padding: .55rem 1rem; border-radius: 999px; font-weight: 600; font-size: .95rem;
+  border: 1px solid var(--ring); background: var(--surface-2); color: var(--ink);
+  transition: transform .15s ease, box-shadow .15s ease; cursor: pointer; font-family: inherit; line-height: 1.3;
+}
+.btn:hover { text-decoration: none; transform: translateY(-1px); box-shadow: var(--shadow); }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.disabled { opacity: .55; cursor: default; }
+.btn.disabled:hover { transform: none; box-shadow: none; }
+.btn svg { width: 16px; height: 16px; }
+.hero .pitch {
+  font-size: clamp(1.1rem, 1rem + .6vw, 1.35rem); color: var(--ink-2); max-width: 58ch;
+  margin: 0 auto 2.4rem; text-wrap: balance;
+}
+.hero .pitch b { color: var(--ink); font-weight: 650; }
+
+/* KPI row */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: .9rem; text-align: left; }
+@media (max-width: 860px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+.kpi {
+  display: block; background: var(--surface); border: 1px solid var(--ring); border-radius: var(--radius);
+  padding: 1.1rem 1.2rem 1rem; box-shadow: var(--shadow); color: inherit;
+}
+a.kpi:hover { text-decoration: none; border-color: var(--blue); }
+.kpi .v { font-size: clamp(2rem, 1.5rem + 1.6vw, 2.7rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1; color: var(--blue); }
+.kpi .v small { font-size: .5em; font-weight: 600; letter-spacing: 0; color: var(--blue); margin-left: .1em; }
+.kpi .l { margin-top: .5rem; font-size: .92rem; color: var(--ink-2); line-height: 1.4; }
+.kpi .l b { color: var(--ink); font-weight: 650; }
+@media (max-width: 480px) {
+  .kpis { grid-template-columns: 1fr; gap: .6rem; }
+  .kpi { display: grid; grid-template-columns: 6.5rem 1fr; gap: .9rem; align-items: center; padding: .9rem 1rem; }
+  .kpi .l { margin-top: 0; }
+}
+
+/* hero robots strip */
+.robots { margin-top: 2.6rem; display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: center; }
+@media (max-width: 720px) { .robots { grid-template-columns: 1fr; } .robots .swap { transform: rotate(90deg); } }
+.robot { position: relative; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--ring); background: var(--fig-bg); box-shadow: var(--shadow); }
+.robot img { width: 100%; aspect-ratio: 16/10; object-fit: cover; }
+.robot.aloha img { object-position: 50% 100%; }
+.robot.franka img { object-position: 50% 42%; }
+.robot .cap {
+  position: absolute; left: .9rem; bottom: .8rem; right: .9rem;
+  display: flex; justify-content: space-between; align-items: baseline; gap: .5rem;
+  font-size: .9rem; color: #0b0b0b;
+}
+.robot .cap b { font-weight: 700; letter-spacing: .04em; }
+.robot .cap span { color: #52514e; }
+.swap { display: grid; place-items: center; color: var(--blue); }
+.swap svg { width: 56px; height: 56px; }
+@media (prefers-reduced-motion: no-preference) {
+  .swap svg { animation: spin 14s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+}
+
+/* ---------- setup grid ---------- */
+.setup { display: grid; gap: 1rem; }
+.phase {
+  background: var(--surface); border: 1px solid var(--ring); border-radius: var(--radius); padding: 1.1rem 1.2rem 1.2rem; box-shadow: var(--shadow);
+}
+.phase-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: .9rem; flex-wrap: wrap; }
+.phase-head h3 { font-size: 1.05rem; }
+.phase-head .note { color: var(--muted); font-size: .9rem; }
+.rows { display: grid; gap: .8rem; }
+.row { display: grid; grid-template-columns: 170px 1fr; gap: .9rem; align-items: center; }
+@media (max-width: 720px) { .row { grid-template-columns: 1fr; } }
+.rob { display: flex; align-items: center; gap: .6rem; }
+.rob img { width: 56px; height: 42px; object-fit: cover; border-radius: 6px; border: 1px solid var(--ring); background: var(--fig-bg); }
+.rob.aloha img { object-position: 50% 100%; }
+.rob.franka img { object-position: 50% 45%; }
+.rob b { display: block; font-size: .92rem; letter-spacing: .04em; }
+.rob span { display: block; font-size: .8rem; color: var(--muted); line-height: 1.25; }
+.rob span.tr { color: var(--blue); font-weight: 650; }
+.frames { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; }
+.frame { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--ring); background: var(--fig-bg); margin: 0; }
+.frame img { width: 100%; aspect-ratio: 4/3; object-fit: cover; }
+.frame .tag {
+  position: absolute; top: .45rem; left: .45rem; font-size: .72rem; font-weight: 700; letter-spacing: .04em;
+  padding: .15rem .45rem; border-radius: 5px; background: #0b0b0b; color: #fff;
+}
+.frame figcaption { font-size: .82rem; color: #52514e; padding: .4rem .55rem .5rem; line-height: 1.25; }
+.frame.transfer { border: 2px dashed var(--blue); }
+.frame.transfer .tag { background: var(--blue); color: var(--bg); }
+.frame.transfer figcaption { color: #0b0b0b; }
+.frame.transfer figcaption em { font-style: normal; color: #1f66bd; font-weight: 600; }
+@media (max-width: 480px) {
+  .frames { gap: .4rem; }
+  .frame img { aspect-ratio: 1 / 1; }
+  .frame figcaption { font-size: .74rem; padding: .3rem .4rem .4rem; }
+  .frame.transfer figcaption em { display: none; }
+}
+.arrowline { display: flex; align-items: center; justify-content: center; gap: .8rem; color: var(--ink-2); font-size: .95rem; padding: .2rem 0; text-align: center; }
+.arrowline svg { width: 22px; height: 40px; color: var(--blue); flex: none; }
+.arrowline b { color: var(--ink); }
+.placeholder {
+  margin-top: 1rem; border: 2px dashed var(--axis); border-radius: 10px; padding: .8rem 1rem;
+  color: var(--muted); font-size: .88rem; display: flex; gap: .7rem; align-items: center;
+}
+.placeholder svg { width: 24px; height: 24px; flex: none; }
+
+/* ---------- method ---------- */
+.figure { background: var(--fig-bg); border: 1px solid var(--ring); border-radius: var(--radius); padding: 1rem; box-shadow: var(--shadow); margin: 0; }
+.figure img { width: 100%; }
+figcaption.cap { font-size: .9rem; color: #52514e; margin-top: .9rem; line-height: 1.45; }
+figcaption.cap b { color: #0b0b0b; }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.4rem; align-items: start; }
+@media (max-width: 860px) { .steps { grid-template-columns: 1fr; } }
+.step { background: var(--surface); border: 1px solid var(--ring); border-radius: var(--radius); padding: 1.1rem 1.2rem; box-shadow: var(--shadow); }
+.step .n { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--blue); color: var(--bg); font-weight: 700; font-size: .85rem; margin-bottom: .6rem; }
+.step h3 { margin-bottom: .45rem; }
+.step p { font-size: .95rem; color: var(--ink-2); margin: 0; }
+.step p + p { margin-top: .5rem; }
+.step.key { border-color: var(--blue); background: var(--blue-wash); }
+.eq { font-size: 1.15rem; margin: .6rem 0 .2rem; color: var(--ink); }
+.eq.sm { font-size: .98rem; color: var(--ink-2); margin: .2rem 0; }
+.simviz { display: grid; grid-template-columns: 1fr auto 1fr; gap: .75rem; align-items: center; margin: 1rem 0 .4rem; }
+.simviz svg { width: 100%; height: auto; display: block; }
+.simviz .lbl { text-align: center; font-size: .8rem; color: var(--muted); margin-top: .35rem; }
+.simviz .approx { font-size: 1.6rem; color: var(--blue); font-weight: 600; text-align: center; }
+.matrix rect.cell { fill: var(--blue); }
+.matrix rect.diag { fill: var(--gray-bar); }
+.matrix rect.bg { fill: var(--surface-2); stroke: var(--hair); }
+.matrix .cell { transition: opacity 1.2s ease; }
+.mini-list { margin: .6rem 0 0; padding-left: 1.1rem; font-size: .93rem; color: var(--ink-2); }
+.mini-list li { margin-bottom: .25rem; }
+.mini-list li b { color: var(--ink); font-weight: 600; }
+
+/* ---------- charts ---------- */
+.chart-card { background: var(--surface); border: 1px solid var(--ring); border-radius: var(--radius); padding: 1.2rem 1.3rem 1rem; box-shadow: var(--shadow); min-width: 0; }
+.chart-card h3 { margin-bottom: .2rem; }
+.chart-card .sub { font-size: .92rem; color: var(--ink-2); margin-bottom: .9rem; }
+.chart-card .legend { display: flex; flex-wrap: wrap; gap: .5rem 1rem; font-size: .85rem; color: var(--ink-2); margin: .6rem 0 .4rem; }
+.legend .key { display: inline-flex; align-items: center; gap: .4rem; }
+.legend .sw { width: 14px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+.legend .sw.line { height: 3px; width: 18px; border-radius: 2px; }
+.legend .sw.hatch { background: repeating-linear-gradient(45deg, var(--gray-bar) 0 2px, transparent 2px 5px); }
+.chart { width: 100%; }
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { font-family: inherit; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+@media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
+.stack { display: grid; gap: 1.2rem; }
+.foot { font-size: .82rem; color: var(--muted); margin-top: .6rem; line-height: 1.45; }
+
+/* svg tokens via classes */
+.bar-own { fill: var(--gray-bar); }
+.bar-tr { fill: var(--blue); }
+.bar-tr.dim { fill: var(--blue); opacity: .72; }
+.bar-hatch { fill: url(#hatch); }
+.grid-l { stroke: var(--grid); stroke-width: 1; }
+.axis-l { stroke: var(--axis); stroke-width: 1; }
+.ref-l { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 4; }
+.tick { fill: var(--muted); font-size: 11px; }
+.tick2 { fill: var(--muted); font-size: 10px; }
+.rowlab { fill: var(--ink-2); font-size: 13px; }
+.rowlab.strong { fill: var(--ink); font-weight: 650; }
+.grouplab { fill: var(--muted); font-size: 11px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; stroke: var(--surface); stroke-width: 4px; paint-order: stroke fill; stroke-linejoin: round; }
+.vlab { fill: var(--ink); font-size: 12.5px; font-weight: 650; }
+.vlab.soft { fill: var(--muted); font-weight: 500; font-size: 11px; }
+.vlab.big { font-size: 13.5px; font-weight: 700; }
+.ln { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.ln.s1 { stroke: var(--blue); }
+.ln.s2 { stroke: var(--orange); }
+.ln.s3 { stroke: var(--aqua); }
+.ln.ref { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.mk { stroke: var(--surface); stroke-width: 2; }
+.mk.s1 { fill: var(--blue); } .mk.s2 { fill: var(--orange); } .mk.s3 { fill: var(--aqua); }
+.hit { fill: transparent; cursor: default; }
+.hit:focus { outline: none; }
+.hit:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; stroke: var(--blue); stroke-width: 2; }
+circle.hit:focus-visible { outline: none; }
+.annot { fill: var(--ink); font-size: 12px; font-weight: 650; }
+.annot.soft { fill: var(--ink-2); font-weight: 500; font-size: 11.5px; }
+.annot-l { stroke: var(--ink-2); stroke-width: 1; }
+.col-lab { fill: var(--ink-2); font-size: 12.5px; }
+.col-lab.strong { fill: var(--ink); font-weight: 650; font-size: 13px; }
+.badge-ours { fill: var(--blue); font-size: 10.5px; font-weight: 700; letter-spacing: .06em; }
+.badge-warn { fill: var(--muted); font-size: 10.5px; font-weight: 700; letter-spacing: .06em; }
+#hatch line { stroke: var(--gray-bar); }
+
+/* bar growth animation */
+@media (prefers-reduced-motion: no-preference) {
+  .chart.grow .bar-own, .chart.grow .bar-tr, .chart.grow .bar-hatch { transform-origin: var(--ox, 0) var(--oy, 0); animation: growx .8s cubic-bezier(.2,.7,.2,1) both; }
+  .chart.grow .colbar { animation-name: growy; }
+  @keyframes growx { from { transform: scaleX(0); } }
+  @keyframes growy { from { transform: scaleY(0); } }
+  .chart.grow .ln:not(.ref) { stroke-dasharray: 1200; stroke-dashoffset: 1200; animation: draw 1.4s ease-out .1s forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+}
+
+/* tooltip */
+#tip {
+  position: fixed; z-index: 50; pointer-events: none; opacity: 0; transition: opacity .12s ease;
+  background: var(--ink); color: var(--bg); font-size: .82rem; line-height: 1.35; padding: .45rem .6rem; border-radius: 7px;
+  max-width: 260px; box-shadow: var(--shadow);
+}
+#tip.on { opacity: 1; }
+#tip b { font-weight: 700; font-size: .95rem; }
+
+/* tables */
+details.tbl { margin-top: 1.2rem; }
+details.tbl summary { cursor: pointer; font-weight: 600; color: var(--ink); padding: .5rem 0; list-style: none; display: flex; align-items: center; gap: .5rem; }
+details.tbl summary::-webkit-details-marker { display: none; }
+details.tbl summary::before { content: ""; width: 8px; height: 8px; border-right: 2px solid var(--ink-2); border-bottom: 2px solid var(--ink-2); transform: rotate(-45deg); transition: transform .2s; margin-left: .2rem; flex: none; }
+details.tbl[open] summary::before { transform: rotate(45deg); }
+.tscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { border-collapse: collapse; width: 100%; font-size: .88rem; min-width: 640px; }
+th { text-align: right; font-weight: 600; color: var(--ink-2); padding: .5rem .6rem; border-bottom: 1.5px solid var(--axis); font-size: .8rem; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+td { text-align: right; padding: .42rem .6rem; border-bottom: 1px solid var(--hair); font-variant-numeric: tabular-nums; color: var(--ink-2); }
+td:first-child { color: var(--ink); white-space: nowrap; }
+tr.ours td { background: var(--blue-wash); color: var(--ink); font-weight: 600; }
+tr.sep td { border-top: 2px solid var(--axis); }
+td.max { font-weight: 700; color: var(--ink); }
+.tnote { font-size: .82rem; color: var(--muted); margin-top: .6rem; line-height: 1.45; }
+
+/* ---------- recipe ---------- */
+.recipe { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1.5rem; align-items: start; }
+@media (max-width: 860px) { .recipe { grid-template-columns: 1fr; } }
+.checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+.checklist li { display: grid; grid-template-columns: 22px 1fr; gap: .6rem; align-items: start; font-size: .98rem; }
+.checklist li b { font-weight: 650; }
+.checklist li span.desc { color: var(--ink-2); }
+.checklist .ck { width: 20px; height: 20px; border-radius: 50%; background: var(--blue); display: grid; place-items: center; margin-top: 3px; }
+.checklist .ck svg { width: 12px; height: 12px; stroke: #fff; stroke-width: 3; fill: none; }
+.limits { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.limits li { border-left: 3px solid var(--axis); padding: .15rem 0 .15rem .9rem; color: var(--ink-2); font-size: .95rem; }
+.limits li b { color: var(--ink); font-weight: 650; }
+.limits li.next { border-left-color: var(--blue); }
+
+/* ---------- bibtex / footer ---------- */
+pre.bib {
+  background: var(--surface); border: 1px solid var(--ring); border-radius: var(--radius); padding: 1rem 1.2rem;
+  font-size: .85rem; line-height: 1.5; overflow-x: auto; margin: 0; color: var(--ink-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.copy { margin-top: .7rem; }
+footer { padding: 2.5rem 0 3rem; color: var(--muted); font-size: .88rem; border-top: 1px solid var(--hair); }
+footer .wrap { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<nav class="nav" aria-label="Sections">
+  <div class="wrap">
+    <a class="brand" href="#top">Action-Similarity Supervision</a>
+    <ul>
+      <li><a href="#setup">Setup</a></li>
+      <li><a href="#method">Method</a></li>
+      <li><a href="#results">Results</a></li>
+      <li><a href="#robust">Robustness</a></li>
+      <li><a href="#recipe">Recipe</a></li>
+      <li><a href="#bibtex">BibTeX</a></li>
+    </ul>
+    <button class="theme" id="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false" title="Toggle dark mode">
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="venue">Preprint · 2026</div>
+    <h1>Improving Cross-embodiment Transfer in Latent Action Models with Action-Similarity Supervision</h1>
+    <div class="authors">
+      Maxime Alvarez<sup>∗</sup>, Renzo Caballero, Tatsuya Matsushima, Yusuke Iwasawa, Yutaka Matsuo
+    </div>
+    <div class="affil">Graduate School of Engineering, The University of Tokyo &nbsp;·&nbsp; <span class="muted small"><sup>∗</sup>corresponding author</span></div>
+
+    <div class="links">
+      <a class="btn primary" href="assets/paper.pdf">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+        Paper (PDF)
+      </a>
+      <span class="btn disabled" role="button" aria-disabled="true" title="arXiv link coming soon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4l16 16M20 4L4 20"/></svg>
+        arXiv (soon)
+      </span>
+      <a class="btn" href="https://github.com/Qu3tzal/caplam-all-baselines">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+        Code
+      </a>
+      <a class="btn" href="#bibtex">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg>
+        BibTeX
+      </a>
+    </div>
+
+    <p class="pitch">
+      Latent action models learn actions from video, but the same motion on two robots can map to different latents.
+      We train the <b>pairwise similarities of latent actions</b> to match those of the robots' <b>ground-truth action sequences</b>,
+      never predicting the actions themselves. One latent policy then transfers tasks between two robots.
+    </p>
+
+    <div class="kpis" role="group" aria-label="Headline numbers">
+      <a class="kpi" href="#results"><div class="v">2.55<small>×</small></div><div class="l"><b>Cross-embodiment success</b> vs. the same π<sub>0</sub> policy trained on raw padded joint actions (24.0 → 61.3%)</div></a>
+      <a class="kpi" href="#results"><div class="v">88.5<small>%</small></div><div class="l"><b>Of in-embodiment success</b> retained on robot–task pairs with zero demonstrations (61.3 / 69.3)</div></a>
+      <a class="kpi" href="#results"><div class="v">+12<small> pts</small></div><div class="l"><b>Transfer vs. predicting the actions</b> with an auxiliary head, from the same labels (46.0 vs 34.0)</div></a>
+      <a class="kpi" href="#robust"><div class="v">10<small>×</small></div><div class="l"><b>Fewer labels</b> for the similarity loss largely keeps the gain: 65.7% transfer from 15 episodes per robot vs 61.3% from 150</div></a>
+    </div>
+
+    <div class="robots" role="group" aria-label="The two embodiments">
+      <figure class="robot aloha" style="margin:0">
+        <img src="assets/aloha_front.webp" alt="Front render of the ALOHA-AgileX bimanual robot in the RoboTwin 2.0 scene" width="1200" height="900">
+        <figcaption class="cap"><b>ALOHA · AgileX</b><span>2 × 6-DoF arms</span></figcaption>
+      </figure>
+      <div class="swap" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2M3 12a9 9 0 0 1 15.5-6.2"/><path d="M18.5 2v3.8h-3.8M5.5 22v-3.8h3.8"/></svg>
+      </div>
+      <figure class="robot franka" style="margin:0">
+        <img src="assets/franka_front.webp" alt="Front render of the dual Franka robot in the RoboTwin 2.0 scene" width="1200" height="900">
+        <figcaption class="cap"><b>FRANKA</b><span>2 × 7-DoF arms</span></figcaption>
+      </figure>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ================= SETUP ================= -->
+<section id="setup">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">The setup</div>
+      <h2>Two robots, disjoint task sets, then swap.</h2>
+      <p class="lede">RoboTwin 2.0, one shared head camera, absolute joint targets in a shared 16-D padded action space. Each robot demonstrates three tasks with 50 scripted episodes each. One latent action model and one latent policy are trained on these same 300 demonstrations, with no extra action-free video; each decoder only on its own robot's labels. At test time, each robot is evaluated closed-loop on the tasks only the <em>other</em> robot demonstrated.</p>
+    </div>
+
+    <div class="setup">
+      <div class="phase">
+        <div class="phase-head"><h3>(a) Training: each robot demonstrates its own task set</h3><span class="note">50 demos per task · 6 tasks · 2 robots</span></div>
+        <div class="rows">
+          <div class="row">
+            <div class="rob aloha"><img src="assets/aloha_front.webp" alt="" loading="lazy"><div><b>ALOHA</b><span>Task set A</span></div></div>
+            <div class="frames">
+              <figure class="frame"><img src="assets/rollouts/proper_click_bell_aloha-agilex.webp" alt="ALOHA clicking a bell" width="320" height="240" loading="lazy"><span class="tag">A1</span><figcaption>Click bell</figcaption></figure>
+              <figure class="frame"><img src="assets/rollouts/proper_press_stapler_aloha-agilex.webp" alt="ALOHA pressing a stapler" width="320" height="240" loading="lazy"><span class="tag">A2</span><figcaption>Press stapler</figcaption></figure>
+              <figure class="frame"><img src="assets/rollouts/proper_move_playingcard_away_aloha-agilex.webp" alt="ALOHA moving a playing card away" width="320" height="240" loading="lazy"><span class="tag">A3</span><figcaption>Move playing card away</figcaption></figure>
+            </div>
+          </div>
+          <div class="row">
+            <div class="rob franka"><img src="assets/franka_front.webp" alt="" loading="lazy"><div><b>FRANKA</b><span>Task set B</span></div></div>
+            <div class="frames">
+              <figure class="frame"><img src="assets/rollouts/proper_click_alarmclock_franka.webp" alt="Franka clicking an alarm clock" width="320" height="240" loading="lazy"><span class="tag">B1</span><figcaption>Click alarm clock</figcaption></figure>
+              <figure class="frame"><img src="assets/rollouts/proper_turn_switch_franka.webp" alt="Franka turning a switch" width="320" height="240" loading="lazy"><span class="tag">B2</span><figcaption>Turn switch</figcaption></figure>
+              <figure class="frame"><img src="assets/rollouts/proper_move_stapler_pad_franka.webp" alt="Franka moving a stapler onto a pad" width="320" height="240" loading="lazy"><span class="tag">B3</span><figcaption>Move stapler to pad</figcaption></figure>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arrowline">
+        <svg viewBox="0 0 24 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v34M5 29l7 7 7-7"/></svg>
+        <span>One shared <b>latent action model</b> · one shared <b>latent policy</b> · one small <b>decoder per robot</b></span>
+      </div>
+
+      <div class="phase">
+        <div class="phase-head"><h3>(b) Evaluation: task sets swapped</h3><span class="note"><span class="emph">0 demonstrations</span> for every evaluated robot–task pair · 50 episodes per pair</span></div>
+        <div class="rows">
+          <div class="row">
+            <div class="rob aloha"><img src="assets/aloha_front.webp" alt="" loading="lazy"><div><b>ALOHA</b><span>Task set B</span><span class="tr">65.3% transfer</span><span>33.3% with raw actions</span></div></div>
+            <div class="frames">
+              <figure class="frame transfer"><img src="assets/rollouts/inverse_click_alarmclock_aloha-agilex.webp" alt="ALOHA clicking the alarm clock, a task it never demonstrated" width="320" height="240" loading="lazy"><span class="tag">B1</span><figcaption>Click alarm clock <em>· transfer</em></figcaption></figure>
+              <figure class="frame transfer"><img src="assets/rollouts/inverse_turn_switch_aloha-agilex.webp" alt="ALOHA turning the switch, a task it never demonstrated" width="320" height="240" loading="lazy"><span class="tag">B2</span><figcaption>Turn switch <em>· transfer</em></figcaption></figure>
+              <figure class="frame transfer"><img src="assets/rollouts/inverse_move_stapler_pad_aloha-agilex.webp" alt="ALOHA moving the stapler to the pad, a task it never demonstrated" width="320" height="240" loading="lazy"><span class="tag">B3</span><figcaption>Move stapler to pad <em>· transfer</em></figcaption></figure>
+            </div>
+          </div>
+          <div class="row">
+            <div class="rob franka"><img src="assets/franka_front.webp" alt="" loading="lazy"><div><b>FRANKA</b><span>Task set A</span><span class="tr">57.3% transfer</span><span>14.7% with raw actions</span></div></div>
+            <div class="frames">
+              <figure class="frame transfer"><img src="assets/rollouts/inverse_click_bell_franka.webp" alt="Franka clicking the bell, a task it never demonstrated" width="320" height="240" loading="lazy"><span class="tag">A1</span><figcaption>Click bell <em>· transfer</em></figcaption></figure>
+              <figure class="frame transfer"><img src="assets/rollouts/inverse_press_stapler_franka.webp" alt="Franka pressing the stapler, a task it never demonstrated" width="320" height="240" loading="lazy"><span class="tag">A2</span><figcaption>Press stapler <em>· transfer</em></figcaption></figure>
+              <figure class="frame transfer"><img src="assets/rollouts/inverse_move_playingcard_away_franka.webp" alt="Franka moving the playing card away, a task it never demonstrated" width="320" height="240" loading="lazy"><span class="tag">A3</span><figcaption>Move playing card away <em>· transfer</em></figcaption></figure>
+            </div>
+          </div>
+        </div>
+        <p class="tnote">Frames in (b) are from actual closed-loop transfer rollouts of the best system. Official RoboTwin 2.0 protocol: evaluation scenes use seeds disjoint from data collection, and only scenes the scripted expert can solve are evaluated; 50 episodes per robot–task pair, 600 per full evaluation. Per-robot transfer rates average three tasks (best system vs. the π<sub>0</sub> policy trained on raw padded joint actions, Table I). Task competence can only have crossed through the shared latent action space and policy. <a href="assets/setup.png">Original Fig. 2</a>.</p>
+        <div class="placeholder" id="video-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>
+          <span>Placeholder: short rollout videos (MP4/WebM) of these six transfer episodes will replace the frames.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pills" role="group" aria-label="What is held fixed"><span class="lbl">Held fixed unless noted:</span><span class="p">π<sub>0</sub> initialisation</span><span class="p">policy architecture</span><span class="p">training hyperparameters</span><span class="p">dataset</span><span class="p">evaluation protocol</span></div>
+  </div>
+</section>
+
+<!-- ================= METHOD ================= -->
+<section id="method">
+  <div class="wrap wide">
+    <div class="sec-head">
+      <div class="kicker">The method</div>
+      <h2>Match the similarities of the actions, never the actions themselves.</h2>
+      <p class="lede">A standard latent action model (inverse + forward dynamics) gets one extra loss: within a batch, the pairwise cosine similarities of the latent actions are trained to match the pairwise similarities of the corresponding ground-truth action sequences. Because no robot action is ever predicted, the latent does not need to encode embodiment specifics.</p>
+    </div>
+
+    <figure class="figure">
+      <img src="assets/method.webp" alt="Method diagram. Stage 1: an inverse dynamics model encodes pairs of observations into latent actions; a forward dynamics model reconstructs the future observation (reconstruction loss); the pairwise similarity matrix of latent actions is aligned with the pairwise similarity matrix of ground-truth action sequences (similarity loss). Stages 2 to 4: the trained IDM annotates the dataset, a per-embodiment decoder is trained from latent actions to actions with an L2 loss, and a latent policy is trained with a behaviour-cloning loss from observations and a task prompt." width="2400" height="813">
+      <figcaption class="cap"><b>Stage 1</b> trains the IDM and FDM jointly with <span class="math">L = L<sub class="up">recon</sub> + λ L<sub class="up">sim</sub></span>. <b>Stage 2</b> annotates every demonstration with the frozen IDM. <b>Stage 3</b> trains a latent behaviour-cloning policy (π<sub>0</sub>), and <b>Stage 4</b> trains one small decoder δ<sub><span class="math">e</span></sub> per embodiment. At inference, the latent policy's output goes through the robot's own decoder. <a href="assets/method.png">Full-size figure</a>.</figcaption>
+    </figure>
+
+    <div class="steps">
+      <div class="step">
+        <div class="n">1</div>
+        <h3>Latent action model</h3>
+        <p>The IDM encodes an observation pair <span class="math">(o<sub class="up">t</sub>, o<sub class="up">t+H</sub>)</span> into a latent action <span class="math">z<sub class="up">t</sub></span>; the FDM reconstructs the future observation from <span class="math">o<sub class="up">t</sub></span> and <span class="math">z<sub class="up">t</sub></span>.</p>
+        <p>Two backbones: a VAE (AdaWorld-style, <span class="math">d</span> = 64, pixel reconstruction, <span class="math">H</span> = 1) and a multi-step model (LAOM-style, <span class="math">d</span> = 1024, feature-space prediction, <span class="math">H</span> ~ U{1..10}).</p>
+      </div>
+      <div class="step key">
+        <div class="n">2</div>
+        <h3>Action-similarity supervision</h3>
+        <p>On each labeled batch, build two <span class="math">B×B</span> cosine-similarity matrices, one from the latents and one from the ground-truth action sequences, and penalise their difference:</p>
+        <div class="eq math">L<sub class="up">sim</sub> = ‖ M ⊙ (S<sup class="up">z</sup> − S<sup class="up">a</sup>) ‖<sub class="up">F</sub><sup class="up">2</sup></div>
+        <div class="eq sm math">S<sup class="up">z</sup><sub class="up">ij</sub> = cos(z<sub class="up">i</sub>, z<sub class="up">j</sub>) &nbsp;·&nbsp; S<sup class="up">a</sup><sub class="up">ij</sub> = max<sub class="up">|d|≤2</sub> cos(A<sub class="up">i</sub><sup class="up">(0)</sup>, A<sub class="up">j</sub><sup class="up">(d)</sup>)</div>
+        <div class="simviz" aria-hidden="true">
+          <div><svg class="matrix" id="mz" viewBox="0 0 120 120"></svg><div class="lbl">Latent actions <span class="math">S<sup class="up">z</sup></span></div></div>
+          <div class="approx">≈</div>
+          <div><svg class="matrix" id="ma" viewBox="0 0 120 120"></svg><div class="lbl">Ground-truth actions <span class="math">S<sup class="up">a</sup></span></div></div>
+        </div>
+        <ul class="mini-list">
+          <li><b>Where it comes from.</b> The loss form follows ViLA's global-structure similarity term and works as relational knowledge distillation: the latent space matches the teacher's pairwise relations, never its individual targets. ViLA uses it for viewpoint robustness; here it targets cross-embodiment transfer.</li>
+          <li><b>Motion, not pose.</b> Absolute actions become per-step deltas, standardised, flattened over the chunk.</li>
+          <li><b>Tolerant to timing.</b> Pairs are scored at their best alignment over ±2 temporal shifts.</li>
+          <li><b>Mask <span class="math">M</span>.</b> Diagonal always excluded. Cross-robot pairs are excluded for joint-space targets (similarities are only well-defined within an embodiment); with end-effector targets the mask can be dropped, which is the X variant of the ablation.</li>
+          <li><b>Tiny weight.</b> λ = 0.05 on LAOM. Gradients flow back into the IDM.</li>
+        </ul>
+      </div>
+      <div class="step">
+        <div class="n">3</div>
+        <h3>Policy and decoders</h3>
+        <p>The frozen IDM labels all demonstrations with latent actions. A flow-matching VLA (π<sub>0</sub>) is trained on the union of both robots' data to predict a chunk of latent actions from the observation and a task prompt.</p>
+        <p>A small per-embodiment decoder maps latents to that robot's joint actions, trained only on its own labels. At deployment: <span class="math">δ<sub class="up">e</sub>(π(o<sub class="up">t</sub>, g))</span>, closed-loop. IDM and FDM are discarded.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RESULTS ================= -->
+<section id="results">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">Main result</div>
+      <h2>Each ingredient of the recipe adds transfer.</h2>
+      <p class="lede">Closed-loop success rate on RoboTwin 2.0, 50 episodes per robot–task pair, averaged over both robots. <b>Transfer</b> = tasks demonstrated only by the other robot. Same π<sub>0</sub> policy, data and protocol for every row except villa-X, which runs its own two-expert ACT-style policy.</p>
+    </div>
+
+    <div class="stack">
+      <div class="chart-card">
+        <h3>From raw robot actions to similarity-supervised latents</h3>
+        <div class="sub">Multi-step (LAOM) backbone unless noted. Top to bottom: predict latents instead of robot actions, then how the action labels enter pretraining, then which action coordinates and which pairs the similarities use, then wrist cameras added to the LAM input. Two rows lower transfer: the action-prediction head (36.0 → 34.0) and the wrist cameras (61.3 → 46.0).</div>
+        <div class="legend"><span class="key"><span class="sw" style="background:var(--blue)"></span>Transfer (other robot's tasks, 0 demos)</span><span class="key"><span class="sw" style="background:var(--gray-bar)"></span>In-embodiment (own tasks)</span><span class="key"><span class="sw hatch"></span>Wrist cameras: transfer falls back</span></div>
+        <div class="chart" id="ladder"></div>
+        <p class="foot">One training seed per row, except the highlighted “+ X · cross-robot pairs” row (LAOM + sim-EE-X, ours), which the paper reports as the mean of three trainings with evaluation seeds and scenes fixed (Table I). Hover or focus a row for both values; the full table is below.</p>
+      </div>
+
+      <div class="two">
+        <div class="chart-card">
+          <h3>Other losses and systems on the same benchmark</h3>
+          <div class="sub">Weighted InfoNCE (63.3) and similarity matching (61.3) lead; InfoNCE uses the same end-effector labels and cross-robot pairs, only the loss form differs. The rest trail, suggesting that continuous action-similarity information is useful across loss forms. Hover or focus a row for what each variant uses.</div>
+          <div class="legend"><span class="key"><span class="sw" style="background:var(--blue)"></span>Transfer</span><span class="key"><span class="sw" style="background:var(--gray-bar)"></span>In-embodiment</span></div>
+          <div class="chart" id="others"></div>
+          <p class="foot">ViLA-style and ConLA-style are loss adaptations on the same LAOM backbone: ViLA-style keeps only the weighted InfoNCE term (ViLA-faithful restores structural alignment, λ = 0.05 each); ConLA-style uses the continuous latent in place of ConLA's VQ tokenizer. villa-X runs its full pipeline with its own two-expert ACT-style policy and no standalone decoder.</p>
+        </div>
+        <div class="chart-card">
+          <h3>Decoder fit improves too</h3>
+          <div class="sub">Stage-4 decoder MSE from latent to ground-truth action. Similarity supervision cuts it 5× relative to the action-prediction head, without ever predicting actions during LAM training.</div>
+          <div class="legend"><span class="key"><span class="sw" style="background:var(--blue)"></span>Decoder MSE (lower is better)</span></div>
+          <div class="chart" id="mse"></div>
+        </div>
+      </div>
+    </div>
+
+    <details class="tbl">
+      <summary>Full Table I: closed-loop success rate (%) for every configuration</summary>
+      <div class="tscroll">
+      <table id="table1">
+        <thead><tr><th>Configuration</th><th>Aloha own</th><th>Aloha transfer</th><th>Franka own</th><th>Franka transfer</th><th>In-emb.</th><th>Transfer</th><th>Overall</th></tr></thead>
+        <tbody>
+          <tr><td>GT-π<sub>0</sub> (padded joint actions)</td><td>76.7</td><td>33.3</td><td>30.7</td><td>14.7</td><td>53.7</td><td>24.0</td><td>38.9</td></tr>
+          <tr><td>GT-π<sub>0</sub>-EE (end-effector deltas)</td><td>49.3</td><td>18.0</td><td>32.7</td><td>34.0</td><td>41.0</td><td>26.0</td><td>33.5</td></tr>
+          <tr class="sep"><td>AdaWorld (VAE)</td><td>46.7</td><td>10.7</td><td>46.0</td><td>43.3</td><td>46.4</td><td>27.0</td><td>36.7</td></tr>
+          <tr><td>AdaWorld + sim (λ = 0.1)</td><td>46.0</td><td>30.7</td><td>37.3</td><td>24.0</td><td>41.7</td><td>27.4</td><td>34.5</td></tr>
+          <tr><td>AdaWorld + sim (λ = 0.05)</td><td>46.0</td><td>34.0</td><td>48.0</td><td>30.7</td><td>47.0</td><td>32.4</td><td>39.7</td></tr>
+          <tr><td>AdaWorld + sim (λ = 0.02)</td><td>42.0</td><td>36.7</td><td>48.0</td><td>24.0</td><td>45.0</td><td>30.4</td><td>37.7</td></tr>
+          <tr class="sep"><td>LAOM (multi-step)</td><td>74.0</td><td>36.0</td><td>51.3</td><td>36.0</td><td>62.7</td><td>36.0</td><td>49.3</td></tr>
+          <tr><td>LAOM + pred (action head)</td><td>70.7</td><td>46.0</td><td>60.7</td><td>22.0</td><td>65.7</td><td>34.0</td><td>49.9</td></tr>
+          <tr><td>LAOM + sim (joint deltas)</td><td>72.0</td><td>40.7</td><td>60.0</td><td>51.3</td><td>66.0</td><td>46.0</td><td>56.0</td></tr>
+          <tr><td>LAOM + sim-EE (end-effector deltas)</td><td>75.3</td><td>55.3</td><td>65.3</td><td>50.7</td><td>70.3</td><td>53.0</td><td>61.7</td></tr>
+          <tr class="ours"><td>LAOM + sim-EE-X (+ cross-robot pairs) — ours</td><td>77.3</td><td class="max">65.3</td><td>61.3</td><td>57.3</td><td>69.3</td><td>61.3</td><td>65.3</td></tr>
+          <tr><td>LAOM + sim-EE-X-MV (+ wrist views)</td><td class="max">79.3</td><td>58.7</td><td>63.3</td><td>33.3</td><td class="max">71.3</td><td>46.0</td><td>58.7</td></tr>
+          <tr class="sep"><td>ViLA-style (weighted InfoNCE)</td><td>73.3</td><td>62.7</td><td class="max">66.7</td><td class="max">64.0</td><td>70.0</td><td class="max">63.3</td><td class="max">66.7</td></tr>
+          <tr><td>ConLA-style (verb-class contrast)</td><td>38.0</td><td>10.7</td><td>34.0</td><td>20.0</td><td>36.0</td><td>15.3</td><td>25.7</td></tr>
+          <tr class="sep"><td>ViLA-faithful (both loss terms)</td><td>71.3</td><td>56.0</td><td>63.3</td><td>48.7</td><td>67.3</td><td>52.3</td><td>59.8</td></tr>
+          <tr><td>villa-X (full pipeline)</td><td>72.7</td><td>19.3</td><td>37.3</td><td>25.3</td><td>55.0</td><td>22.3</td><td>38.6</td></tr>
+          <tr><td>CLAM (co-trained decoder)</td><td>64.0</td><td>37.3</td><td>55.3</td><td>53.3</td><td>59.6</td><td>45.3</td><td>52.5</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="tnote">Own / transfer = tasks demonstrated by the executing robot / by the other robot; each cell averages three tasks. Aggregate columns average the two robots or all twelve pairs. One training seed per row unless noted; the LAOM + sim-EE-X row is the mean over three trainings with evaluation seeds and scenes fixed (the paper reports ± sample standard deviation, not reproduced here). Bold marks column maxima among individual runs. sim = similarity supervision, EE = similarities on end-effector deltas, X = cross-embodiment pairs included, MV = wrist cameras added to the LAM input. villa-X uses its own two-expert ACT-style policy without a standalone decoder.</p>
+    </details>
+  </div>
+</section>
+
+<!-- ================= ROBUSTNESS ================= -->
+<section id="robust">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">Does it hold up?</div>
+      <h2>Fewer labels, smaller policy: the transfer benefit stays.</h2>
+    </div>
+    <div class="two">
+      <div class="chart-card">
+        <h3>10% of the action labels largely keep the gain</h3>
+        <div class="sub">Transfer success vs. the fraction of labeled episodes reaching the auxiliary loss (similarity matching or weighted InfoNCE; log scale). Observation data is unchanged throughout; only the action labels reaching the loss are withheld. With a decoder trained on all 150 labeled episodes per robot, both continuous objectives keep most of their transfer at 10% labels. The 10× saving applies to the auxiliary loss only: starving the <em>decoder</em> too is what hurts.</div>
+        <div class="legend">
+          <span class="key"><span class="sw line" style="background:var(--blue)"></span>Similarity matching · full decoder</span>
+          <span class="key"><span class="sw line" style="background:var(--orange)"></span>Weighted InfoNCE · full decoder</span>
+          <span class="key"><span class="sw line" style="background:var(--aqua)"></span>Similarity matching · restricted decoder</span>
+          <span class="key"><span class="sw line" style="background:var(--muted)"></span>No LAM supervision · full decoder</span>
+        </div>
+        <div class="chart" id="labels"></div>
+        <p class="foot">Lines connect evaluated fractions only. Curves are non-monotonic; the paper makes no fewer-is-better claim.</p>
+      </div>
+      <div class="chart-card">
+        <h3>Transfer survives a 60× smaller policy</h3>
+        <div class="sub">Swap π<sub>0</sub> (~3B) for a 49M-parameter Multi-Task DiT, keeping LAM pretraining, annotation and decoders fixed. Latent actions lift transfer by +37.3 points for π<sub>0</sub> and +32.4 points (over 25×) for the DiT. The DiT keeps 78.9% of its in-embodiment success on transfer, π<sub>0</sub> 88.5%.</div>
+        <div class="legend"><span class="key"><span class="sw" style="background:var(--blue)"></span>Transfer</span><span class="key"><span class="sw" style="background:var(--gray-bar)"></span>In-embodiment</span></div>
+        <div class="chart" id="policy"></div>
+        <p class="foot">The policy sets the absolute level; the latent actions carry the transfer.</p>
+      </div>
+    </div>
+
+    <details class="tbl">
+      <summary>Table II: label-efficiency study (in-embodiment / transfer / 4-cell average, %)</summary>
+      <div class="tscroll">
+      <table>
+        <thead><tr><th>LAM labels</th><th>Episodes / robot</th><th>Similarity · full decoder</th><th>Similarity · restricted decoder</th><th>InfoNCE · full decoder</th></tr></thead>
+        <tbody>
+          <tr><td>0%</td><td>0</td><td>62.65 / 36.0 / 49.3</td><td>–</td><td>–</td></tr>
+          <tr><td>1%</td><td>2</td><td>65.3 / 36.3 / 50.8</td><td>11.0 / 9.0 / 10.0</td><td>64.0 / 39.4 / 51.7</td></tr>
+          <tr><td>5%</td><td>8</td><td>69.7 / 58.7 / 64.2</td><td>25.35 / 16.0 / 20.7</td><td>–</td></tr>
+          <tr><td>10%</td><td>15</td><td>70.35 / 65.7 / 68.0</td><td>25.7 / 31.0 / 28.3</td><td>70.0 / 62.0 / 66.0</td></tr>
+          <tr><td>20%</td><td>30</td><td>71.65 / 65.7 / 68.7</td><td>53.0 / 47.0 / 50.0</td><td>–</td></tr>
+          <tr><td>50%</td><td>75</td><td>72.7 / 68.3 / 70.5</td><td>70.35 / 62.3 / 66.3</td><td>67.7 / 61.7 / 64.7</td></tr>
+          <tr><td>100%</td><td>150</td><td>69.3 / 61.3 / 65.3</td><td>69.3 / 61.3 / 65.3</td><td>70.0 / 63.3 / 66.7</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="tnote">Label fraction = fraction of episodes whose action labels reach the similarity loss. A full decoder uses all 150 labeled episodes per robot; a restricted decoder uses the same subset as the loss.</p>
+    </details>
+
+  </div>
+</section>
+
+<!-- ================= RECIPE ================= -->
+<section id="recipe">
+  <div class="wrap">
+    <div class="recipe">
+      <div>
+        <div class="kicker">The recipe</div>
+        <h2 style="margin-bottom:1.2rem">Best configuration of the study.</h2>
+        <ul class="checklist">
+          <li><span class="ck"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg></span><span><b>Multi-step LAM</b> (LAOM backbone) pretrained from the shared head camera only. <span class="desc">No wrist views.</span></span></li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg></span><span><b>Similarity targets on end-effector deltas</b>, standardised per dimension. <span class="desc">Plausibly because end-effector motion can stay similar across arm configurations while joint space cannot.</span></span></li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg></span><span><b>Cosine similarity with a ±2-step sliding window</b>, symmetrised with an element-wise max.</span></li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg></span><span><b>Within- and cross-embodiment pairs</b>, self-pairs excluded. <span class="desc">Dropping the embodiment mask is what lets the loss align latents <em>across</em> robots: 53.0 → 61.3 transfer.</span></span></li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg></span><span><b>λ = 0.05</b> for the LAOM backbone. <span class="desc">Effective strength is backbone-dependent because reconstruction scales differ.</span></span></li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg></span><span><b>Frozen IDM annotates all demos</b>; one latent policy for all embodiments; one decoder per robot trained on all of its labels.</span></li>
+        </ul>
+      </div>
+      <div>
+        <div class="kicker">Scope &amp; outlook</div>
+        <ul class="limits">
+          <li><b>Two embodiments, both bimanual arms with grippers, in simulation.</b> More heterogeneous embodiments remain future work.</li>
+          <li><b>One training seed per configuration</b> in the main table, except the selected LAOM + sim-EE-X row, which is averaged over three trainings.</li>
+          <li><b>Backbone-dependent gain.</b> On the VAE backbone, similarity supervision lifts transfer from 27.0 to at most 32.4; the comparison with action prediction is established on LAOM.</li>
+          <li><b>Constant offsets only.</b> The ±2-step window does not handle motions at different speeds; DTW-style alignment is left to future work.</li>
+          <li><b>Scale may close the gap.</b> Large-scale training shows cross-embodiment emerging from data alone, at a much larger compute cost; this recipe targets the low-data regime.</li>
+          <li class="next"><b>Only similarities are needed, not actions.</b> The loss extends naturally to labels such as human wrist trajectories: a path to training latent action spaces on cheap, heterogeneous supervision.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= BIBTEX ================= -->
+<section id="bibtex">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker">Citation</div>
+      <h2>BibTeX</h2>
+    </div>
+<pre class="bib" id="bibtext">@article{alvarez2026actionsimilarity,
+  title   = {Improving Cross-embodiment Transfer in Latent Action Models with Action-Similarity Supervision},
+  author  = {Alvarez, Maxime and Caballero, Renzo and Matsushima, Tatsuya and Iwasawa, Yusuke and Matsuo, Yutaka},
+  year    = {2026},
+  note    = {Preprint}
+}</pre>
+    <div class="copy"><button class="btn" id="copybib" type="button">Copy BibTeX</button></div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 The authors · Graduate School of Engineering, The University of Tokyo</span>
+    <span>Simulation: <a href="https://github.com/RoboTwin-Platform/RoboTwin">RoboTwin 2.0</a> · Contact: <a href="mailto:maxime.alvarez@weblab.t.u-tokyo.ac.jp">maxime.alvarez@weblab.t.u-tokyo.ac.jp</a></span>
+  </div>
+</footer>
+
+<div id="tip" role="tooltip"></div>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke-width="2.5"/></pattern></defs></svg>
+
+<script>
+(function () {
+  'use strict';
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  const txt = (parent, x, y, s, cls, anchor) => {
+    const t = el('text', { x, y, class: cls || '' }, parent);
+    if (anchor) t.setAttribute('text-anchor', anchor);
+    t.textContent = s;
+    return t;
+  };
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hostW = host => Math.max(300, Math.round(host.clientWidth || 600));
+
+  /* ---------- tooltip ---------- */
+  const tip = document.getElementById('tip');
+  function showTip(evt, lines) {
+    tip.replaceChildren();
+    lines.filter(Boolean).forEach((l, i) => {
+      const d = document.createElement('div');
+      if (i === 0) { const b = document.createElement('b'); b.textContent = l; d.appendChild(b); }
+      else d.textContent = l;
+      tip.appendChild(d);
+    });
+    tip.classList.add('on');
+    moveTip(evt);
+  }
+  function moveTip(evt) {
+    const x = evt.clientX || 0, y = evt.clientY || 0;
+    const r = tip.getBoundingClientRect();
+    let left = x + 14, top = y + 14;
+    if (left + r.width > window.innerWidth - 8) left = x - r.width - 14;
+    if (top + r.height > window.innerHeight - 8) top = y - r.height - 14;
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  }
+  let tipOwner = null;
+  function hideTip(node) { if (node && tipOwner !== node) return; tipOwner = null; tip.classList.remove('on'); }
+  function bindTip(node, lines) {
+    node.setAttribute('tabindex', '0');
+    node.setAttribute('role', 'img');
+    node.setAttribute('aria-label', lines.filter(Boolean).join('. '));
+    node.addEventListener('pointerenter', e => { tipOwner = node; showTip(e, lines); });
+    node.addEventListener('pointermove', e => { if (tipOwner === node) moveTip(e); });
+    node.addEventListener('pointerleave', () => hideTip(node));
+    node.addEventListener('focus', () => { tipOwner = node; const r = node.getBoundingClientRect(); showTip({ clientX: r.left + r.width / 2, clientY: r.top }, lines); });
+    node.addEventListener('blur', () => hideTip(node));
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') hideTip(); });
+
+  /* ---------- rounded bar helpers (4px rounded data end, square at the baseline) ---------- */
+  function hbar(g, x0, y, w, h, cls) {
+    const r = Math.min(4, Math.max(0, w) / 2);
+    const d = `M${x0},${y} h${Math.max(0, w - r)} a${r},${r} 0 0 1 ${r},${r} v${h - 2 * r} a${r},${r} 0 0 1 -${r},${r} h-${Math.max(0, w - r)} z`;
+    const p = el('path', { d, class: cls }, g);
+    p.style.setProperty('--ox', x0 + 'px');
+    return p;
+  }
+  function vbar(g, x, yBase, w, h, cls) {
+    const r = Math.min(4, Math.max(0, h) / 2);
+    const d = `M${x},${yBase} v-${Math.max(0, h - r)} a${r},${r} 0 0 1 ${r},-${r} h${w - 2 * r} a${r},${r} 0 0 1 ${r},${r} v${Math.max(0, h - r)} z`;
+    const p = el('path', { d, class: cls }, g);
+    p.style.setProperty('--oy', yBase + 'px');
+    p.style.setProperty('--ox', x + 'px');
+    return p;
+  }
+
+  /* ---------- horizontal paired-bar chart ---------- */
+  function pairedBars(host, groups, opts) {
+    const W = hostW(host), compact = W < 600;
+    const labelW = compact ? Math.round(W * 0.38) : (opts.labelW || 250), right = 46, top = opts.ref ? 40 : 22, bottom = 26;
+    const rowH = 36, groupGap = compact ? 20 : 22, bh = 11, gap = 2;
+    let n = 0; groups.forEach(g => { n += g.rows.length; });
+    const H = top + n * rowH + groups.length * groupGap + bottom;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': opts.aria || '' });
+    host.replaceChildren(svg);
+    const x = v => labelW + (W - labelW - right) * v / 100;
+    const plotTop = top, plotBot = H - bottom;
+    [0, 20, 40, 60, 80, 100].forEach(v => {
+      el('line', { x1: x(v), x2: x(v), y1: plotTop, y2: plotBot, class: 'grid-l' }, svg);
+      txt(svg, x(v), H - 8, v === 100 ? '100%' : String(v), 'tick', 'middle');
+    });
+    el('line', { x1: x(0), x2: x(0), y1: plotTop, y2: plotBot, class: 'axis-l' }, svg);
+    let y = top; const heads = [];
+    groups.forEach(gr => {
+      y += groupGap;
+      if (gr.name) heads.push([y - 7, (compact && gr.short) ? gr.short : gr.name]);
+      gr.rows.forEach(row => {
+        const g = el('g', {}, svg);
+        const yy = y + (rowH - (2 * bh + gap)) / 2;
+        const label = compact && row.short ? row.short : row.label;
+        txt(g, labelW - 12, y + rowH / 2 + 4.5, label, 'rowlab' + (row.emph ? ' strong' : ''), 'end');
+        hbar(g, x(0), yy, x(row.own) - x(0), bh, 'bar-own');
+        txt(g, x(row.own) + 5, yy + bh - 2, row.own.toFixed(1), 'vlab soft');
+        hbar(g, x(0), yy + bh + gap, x(row.tr) - x(0), bh, row.warn ? 'bar-hatch' : ('bar-tr' + (row.emph ? '' : ' dim')));
+        txt(g, x(row.tr) + 6, yy + bh + gap + bh - 1.5, row.tr.toFixed(1), 'vlab' + (row.emph ? ' big' : ''));
+        if (row.emph) txt(g, labelW - 12, y + rowH / 2 + 17, 'OURS', 'badge-ours', 'end');
+        if (row.warn) txt(g, labelW - 12, y + rowH / 2 + 17, 'TRANSFER DROPS', 'badge-warn', 'end');
+        const hit = el('rect', { x: 0, y: y, width: W, height: rowH, class: 'hit' }, g);
+        bindTip(hit, [`${row.tr.toFixed(1)}% transfer`, `${row.own.toFixed(1)}% in-embodiment`, row.label, row.note || '']);
+        y += rowH;
+      });
+    });
+    if (opts.ref) {
+      el('line', { x1: x(opts.ref.v), x2: x(opts.ref.v), y1: 14, y2: plotBot, class: 'ref-l' }, svg);
+      txt(svg, x(opts.ref.v) + 5, 12, `${opts.ref.label} · ${opts.ref.v.toFixed(1)}`, 'annot soft');
+    }
+    heads.forEach(([hy, name]) => txt(svg, 6, hy, name, 'grouplab'));
+  }
+
+  /* ---------- vertical grouped columns ---------- */
+  function groupedColumns(host, data, opts) {
+    const W = hostW(host), H = 330, left = 42, right = 10, top = 34, bottom = 62;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': opts.aria || '' });
+    host.replaceChildren(svg);
+    const y = v => top + (H - top - bottom) * (1 - v / 80);
+    [0, 20, 40, 60, 80].forEach(v => {
+      el('line', { x1: left, x2: W - right, y1: y(v), y2: y(v), class: 'grid-l' }, svg);
+      txt(svg, left - 8, y(v) + 4, v === 80 ? '80%' : String(v), 'tick', 'end');
+    });
+    const ng = data.length, groupW = (W - left - right) / ng;
+    const colW = Math.min(22, Math.floor(groupW / 7)), pairGap = 6, pairW = 2 * colW + pairGap, between = Math.min(22, colW);
+    data.forEach((gr, gi) => {
+      const gx0 = left + gi * groupW;
+      const cols = gr.cols; const totalW = cols.length * pairW + (cols.length - 1) * between;
+      let cx = gx0 + (groupW - totalW) / 2;
+      cols.forEach(c => {
+        const g = el('g', {}, svg);
+        vbar(g, cx, y(0), colW, y(0) - y(c.own), 'bar-own colbar');
+        vbar(g, cx + colW + pairGap, y(0), colW, y(0) - y(c.tr), 'bar-tr colbar' + (c.emph ? '' : ' dim'));
+        txt(g, cx + colW / 2, y(c.own) - 6, c.own.toFixed(1), 'vlab soft', 'middle');
+        txt(g, cx + colW + pairGap + colW / 2, y(c.tr) - 6, c.tr.toFixed(1), 'vlab' + (c.emph ? ' big' : ''), 'middle');
+        txt(g, cx + pairW / 2, y(0) + 18, c.label, 'col-lab' + (c.emph ? ' strong' : ''), 'middle');
+        if (c.label2) txt(g, cx + pairW / 2, y(0) + 33, c.label2, 'col-lab' + (c.emph ? ' strong' : ''), 'middle');
+        const hit = el('rect', { x: cx - 8, y: top, width: pairW + 16, height: H - top - bottom, class: 'hit' }, g);
+        bindTip(hit, [`${c.tr.toFixed(1)}% transfer`, `${c.own.toFixed(1)}% in-embodiment`, `${gr.name} · ${c.label}${c.label2 ? ' ' + c.label2 : ''}`]);
+        cx += pairW + between;
+      });
+      txt(svg, gx0 + groupW / 2, H - 8, gr.name, 'col-lab strong', 'middle');
+      if (gr.annot) txt(svg, gx0 + groupW / 2, top - 14, (W < 480 && gr.short) ? gr.short : gr.annot, 'annot', 'middle');
+    });
+    el('line', { x1: left, x2: W - right, y1: y(0), y2: y(0), class: 'axis-l' }, svg);
+  }
+
+  /* ---------- single-series horizontal bars (MSE) ---------- */
+  function simpleBars(host, rows, opts) {
+    const W = hostW(host), labelW = Math.min(190, Math.round(W * 0.36)), right = 56, top = 14, bottom = 26, rowH = 40, bh = 14;
+    const H = top + rows.length * rowH + bottom;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': opts.aria || '' }); host.replaceChildren(svg);
+    const x = v => labelW + (W - labelW - right) * v / opts.max;
+    opts.ticks.forEach(v => { el('line', { x1: x(v), x2: x(v), y1: top, y2: H - bottom, class: 'grid-l' }, svg); txt(svg, x(v), H - 8, String(v), 'tick', 'middle'); });
+    el('line', { x1: x(0), x2: x(0), y1: top, y2: H - bottom, class: 'axis-l' }, svg);
+    rows.forEach((r, i) => {
+      const g = el('g', {}, svg); const y = top + i * rowH + (rowH - bh) / 2;
+      txt(g, labelW - 12, y + bh - 2, r.label, 'rowlab' + (r.emph ? ' strong' : ''), 'end');
+      hbar(g, x(0), y, x(r.v) - x(0), bh, 'bar-tr' + (r.emph ? '' : ' dim'));
+      txt(g, x(r.v) + 6, y + bh - 2.5, r.v.toFixed(3), 'vlab' + (r.emph ? ' big' : ''));
+      const hit = el('rect', { x: 0, y: top + i * rowH, width: W, height: rowH, class: 'hit' }, g);
+      bindTip(hit, [`MSE ${r.v.toFixed(3)}`, r.label]);
+    });
+  }
+
+  /* ---------- line chart, log x ---------- */
+  function lineChart(host, series, opts) {
+    const W = hostW(host), H = 340, left = 42, right = 24, top = 20, bottom = 64;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': opts.aria || '' }); host.replaceChildren(svg);
+    const xs = [[1, 2], [5, 8], [10, 15], [20, 30], [50, 75], [100, 150]];
+    const lx = v => left + (W - left - right) * Math.log10(v) / 2;
+    const y = v => top + (H - top - bottom) * (1 - v / 80);
+    [0, 20, 40, 60, 80].forEach(v => { el('line', { x1: left, x2: W - right, y1: y(v), y2: y(v), class: 'grid-l' }, svg); txt(svg, left - 8, y(v) + 4, v === 80 ? '80%' : String(v), 'tick', 'end'); });
+    xs.forEach(([p, ep]) => { txt(svg, lx(p), H - bottom + 18, p + '%', 'tick', 'middle'); txt(svg, lx(p), H - bottom + 31, ep + ' ep.', 'tick2', 'middle'); });
+    txt(svg, (left + W - right) / 2, H - 8, W < 480 ? 'Labels for the auxiliary loss (log scale)' : 'Labeled episodes for the auxiliary loss (%, log scale) · episodes per robot', 'tick', 'middle');
+    el('line', { x1: left, x2: W - right, y1: y(0), y2: y(0), class: 'axis-l' }, svg);
+    if (opts.ref !== undefined) {
+      el('line', { x1: left, x2: W - right, y1: y(opts.ref), y2: y(opts.ref), class: 'ln ref' }, svg);
+      txt(svg, W - right, y(opts.ref) - 5, (W < 480 ? 'no LAM · ' : 'no LAM supervision · ') + opts.ref.toFixed(1), 'tick', 'end');
+    }
+    if (opts.bracket) {
+      const b = opts.bracket;
+      el('line', { x1: lx(b.x), x2: lx(b.x), y1: y(b.y1) + 8, y2: y(b.y2) - 8, class: 'annot-l', 'stroke-dasharray': '2 3' }, svg);
+      txt(svg, lx(b.x) + 9, y(b.y2) + 15, (W < 480 && b.short) ? b.short : b.text, 'annot soft');
+    }
+    series.forEach(s => {
+      const pts = s.pts.map(p => [lx(p[0]), y(p[1])]);
+      el('path', { d: 'M' + pts.map(p => p.join(',')).join(' L'), class: 'ln ' + s.cls }, svg);
+    });
+    series.forEach(s => {
+      s.pts.forEach(p => {
+        const g = el('g', {}, svg);
+        el('circle', { cx: lx(p[0]), cy: y(p[1]), r: 4.5, class: 'mk ' + s.cls }, g);
+        const hit = el('circle', { cx: lx(p[0]), cy: y(p[1]), r: 13, class: 'hit' }, g);
+        bindTip(hit, [`${p[1].toFixed(1)}% transfer`, s.name, `${p[0]}% of labels (${p[2]} episodes per robot)`]);
+      });
+    });
+    if (opts.annot) {
+      const a = opts.annot;
+      el('line', { x1: lx(a.x), x2: lx(a.x), y1: y(a.y) - 10, y2: y(a.y) - 30, class: 'annot-l' }, svg);
+      txt(svg, lx(a.x), y(a.y) - 36, a.text, 'annot', 'middle');
+    }
+  }
+
+  /* ---------- similarity matrices motif ---------- */
+  function matrix(id, values, animateFrom) {
+    const svg = document.getElementById(id); const n = values.length; const s = 120 / n;
+    el('rect', { x: 0, y: 0, width: 120, height: 120, rx: 6, class: 'bg' }, svg);
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+      const r = el('rect', { x: j * s + 1.5, y: i * s + 1.5, width: s - 3, height: s - 3, rx: 2, class: i === j ? 'diag' : 'cell' }, svg);
+      if (i === j) { r.style.opacity = .5; continue; }
+      const target = 0.12 + 0.88 * values[i][j];
+      if (animateFrom && !reduced) { r.style.opacity = animateFrom[i][j]; r.dataset.target = target; }
+      else r.style.opacity = target;
+    }
+  }
+  const SA = [
+    [1, .9, .2, .15, .4],
+    [.9, 1, .25, .2, .35],
+    [.2, .25, 1, .85, .3],
+    [.15, .2, .85, 1, .25],
+    [.4, .35, .3, .25, 1]];
+  const SZ0 = [
+    [1, .3, .7, .5, .2],
+    [.3, 1, .4, .8, .6],
+    [.7, .4, 1, .3, .7],
+    [.5, .8, .3, 1, .4],
+    [.2, .6, .7, .4, 1]].map(r => r.map(v => 0.12 + 0.88 * v));
+  matrix('mz', SA, SZ0); matrix('ma', SA);
+  if (!reduced && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver(es => es.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.querySelectorAll('rect.cell').forEach(c => { if (c.dataset.target) setTimeout(() => { c.style.opacity = c.dataset.target; }, 400); });
+      io.unobserve(e.target);
+    }), { threshold: .6 });
+    io.observe(document.getElementById('mz'));
+  } else {
+    document.querySelectorAll('#mz rect.cell').forEach(c => { if (c.dataset.target) c.style.opacity = c.dataset.target; });
+  }
+
+  /* ---------- data (Table I, Table II, Fig. 4, Sec. V-A) ---------- */
+  const H = id => document.getElementById(id);
+  function renderAll() {
+    pairedBars(H('ladder'), [
+      { name: 'Policy predicts robot actions (no LAM)', short: 'Robot actions (no LAM)', rows: [
+        { label: 'GT-π₀ · padded joint actions', short: 'GT-π₀ · joint actions', own: 53.7, tr: 24.0, note: 'Standard shared, padded action space' },
+        { label: 'GT-π₀-EE · end-effector deltas as target', short: 'GT-π₀-EE · EE target', own: 41.0, tr: 26.0, note: 'End-effector deltas as the policy target: transfer barely moves, in-embodiment drops 53.7 → 41.0' },
+      ]},
+      { name: 'Policy predicts latent actions', short: 'Latent actions', rows: [
+        { label: 'LAOM · no action labels', short: 'LAOM · no labels', own: 62.7, tr: 36.0, note: 'Unsupervised multi-step LAM' },
+        { label: 'LAOM + pred · predict the actions', short: 'LAOM + pred', own: 65.7, tr: 34.0, note: 'Auxiliary action-prediction head' },
+        { label: 'LAOM + sim · joint-delta similarities', short: 'LAOM + sim (joint)', own: 66.0, tr: 46.0, note: 'Same labels, used as pairwise similarities' },
+      ]},
+      { name: 'On top of + sim: coordinates, pairs, views', short: 'Coordinates, pairs, views', rows: [
+        { label: '+ EE · end-effector deltas', short: '+ EE deltas', own: 70.3, tr: 53.0, note: 'Similarities computed on end-effector motion' },
+        { label: '+ X · cross-robot pairs', short: '+ X cross-robot', own: 69.3, tr: 61.3, emph: true, note: 'Embodiment mask dropped: the loss compares latents across robots' },
+        { label: '+ MV · wrist cameras into the LAM', short: '+ MV wrist cams', own: 71.3, tr: 46.0, warn: true, note: 'Best in-embodiment score of the study, but transfer falls back' },
+      ]},
+    ], { ref: { v: 24.0, label: 'padded-action baseline' }, aria: 'Bar chart of transfer and in-embodiment success for the main ablation ladder; transfer rises from 24.0 with raw robot actions (26.0 with end-effector deltas as the policy target) to 61.3 with similarity supervision on end-effector deltas and cross-robot pairs; adding wrist cameras drops transfer to 46.0.' });
+
+    pairedBars(H('others'), [
+      { name: '', rows: [
+        { label: 'ViLA-style weighted InfoNCE', short: 'ViLA-style InfoNCE', own: 70.0, tr: 63.3, note: 'Same EE labels and cross-robot pairs, InfoNCE form' },
+        { label: 'Similarity matching', short: 'Similarity matching', own: 69.3, tr: 61.3, emph: true, note: 'LAOM + sim-EE-X' },
+        { label: 'ViLA-faithful · both terms', short: 'ViLA-faithful', own: 67.3, tr: 52.3, note: 'InfoNCE + structural alignment, λ = 0.05 each' },
+        { label: 'CLAM · co-trained decoder', short: 'CLAM', own: 59.6, tr: 45.3, note: 'Shared action decoder trained inside LAM pretraining' },
+        { label: 'LAOM + pred · action head', short: 'LAOM + pred', own: 65.7, tr: 34.0, note: 'Auxiliary action-prediction head' },
+        { label: 'villa-X · full pipeline', short: 'villa-X', own: 55.0, tr: 22.3, note: 'Embodiment-specific context, proprioceptive prediction, VQ-32 codebook, ACT-style policy' },
+        { label: 'ConLA-style · verb-class contrast', short: 'ConLA-style', own: 36.0, tr: 15.3, note: 'Supervised contrastive on discrete verb classes, time-reversal negative' },
+      ]},
+    ], { labelW: 200, aria: 'Bar chart comparing transfer success of alternative losses and systems: weighted InfoNCE 63.3, similarity matching 61.3, ViLA-faithful 52.3, CLAM 45.3, action head 34.0, villa-X 22.3, ConLA-style 15.3.' });
+
+    simpleBars(H('mse'), [
+      { label: 'AdaWorld (VAE)', v: 0.038 },
+      { label: 'LAOM · no labels', v: 0.017 },
+      { label: 'LAOM + pred', v: 0.015 },
+      { label: 'LAOM + sim', v: 0.003, emph: true },
+    ], { max: 0.04, ticks: [0, 0.01, 0.02, 0.03, 0.04], aria: 'Decoder MSE: 0.038 AdaWorld, 0.017 LAOM, 0.015 with action prediction, 0.003 with similarity supervision.' });
+
+    lineChart(H('labels'), [
+      { name: 'Similarity matching · full decoder', cls: 's1', pts: [[1, 36.3, 2], [5, 58.7, 8], [10, 65.7, 15], [20, 65.7, 30], [50, 68.3, 75], [100, 61.3, 150]] },
+      { name: 'Weighted InfoNCE · full decoder', cls: 's2', pts: [[1, 39.4, 2], [10, 62.0, 15], [50, 61.7, 75], [100, 63.3, 150]] },
+      { name: 'Similarity matching · restricted decoder', cls: 's3', pts: [[1, 9.0, 2], [5, 16.0, 8], [10, 31.0, 15], [20, 47.0, 30], [50, 62.3, 75], [100, 61.3, 150]] },
+    ], { ref: 36.0, annot: { x: 10, y: 65.7, text: '10% labels · 65.7' }, bracket: { x: 10, y1: 65.7, y2: 31.0, text: 'same LAM, restricted decoder: 31.0', short: '31.0 · restricted' }, aria: 'Line chart of transfer success versus labeled fraction. Similarity matching with a full decoder: 36.3 at 1%, 58.7 at 5%, 65.7 at 10%, 65.7 at 20%, 68.3 at 50%, 61.3 at 100%. Weighted InfoNCE: 39.4, 62.0, 61.7, 63.3 at 1, 10, 50, 100%. Restricted decoder: 9.0, 16.0, 31.0, 47.0, 62.3, 61.3. No LAM supervision baseline 36.0.' });
+
+    groupedColumns(H('policy'), [
+      { name: 'Multi-Task DiT (49M)', annot: 'transfer 1.3 → 33.7 (>25×)', short: '1.3 → 33.7 (>25×)', cols: [
+        { label: 'Robot', label2: 'actions', own: 30.0, tr: 1.3 },
+        { label: 'Latent', label2: 'actions', own: 42.7, tr: 33.7, emph: true },
+      ]},
+      { name: 'π₀ (~3B)', annot: 'transfer 24.0 → 61.3 (+37.3)', short: '24.0 → 61.3 (+37.3)', cols: [
+        { label: 'Robot', label2: 'actions', own: 53.7, tr: 24.0 },
+        { label: 'Latent', label2: 'actions', own: 69.3, tr: 61.3, emph: true },
+      ]},
+    ], { aria: 'Grouped columns: with the 49M DiT, transfer goes from 1.3 to 33.7 and in-embodiment from 30.0 to 42.7 when switching from robot actions to latent actions; with the 3B pi-zero, transfer goes from 24.0 to 61.3 and in-embodiment from 53.7 to 69.3.' });
+  }
+  renderAll();
+  let lastW = window.innerWidth, rt;
+  window.addEventListener('resize', () => {
+    clearTimeout(rt);
+    rt = setTimeout(() => { if (Math.abs(window.innerWidth - lastW) > 40) { lastW = window.innerWidth; renderAll(); } }, 150);
+  });
+
+  /* ---------- grow-in animation on scroll ---------- */
+  if (!reduced && 'IntersectionObserver' in window) {
+    const io2 = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('grow'); io2.unobserve(e.target); } }), { threshold: .2 });
+    document.querySelectorAll('.chart').forEach(c => io2.observe(c));
+  }
+
+  /* ---------- theme toggle (light by default; choice remembered) ---------- */
+  const root = document.documentElement, tbtn = document.getElementById('theme-toggle');
+  function setTheme(dark) {
+    if (dark) root.setAttribute('data-theme', 'dark'); else root.removeAttribute('data-theme');
+    tbtn.setAttribute('aria-pressed', String(dark));
+    tbtn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+  }
+  tbtn.setAttribute('aria-pressed', String(root.getAttribute('data-theme') === 'dark'));
+  tbtn.addEventListener('click', () => setTheme(root.getAttribute('data-theme') !== 'dark'));
+
+  /* ---------- copy bibtex ---------- */
+  const btn = document.getElementById('copybib');
+  btn.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(document.getElementById('bibtext').textContent); btn.textContent = 'Copied'; setTimeout(() => { btn.textContent = 'Copy BibTeX'; }, 1500); }
+    catch (e) { btn.textContent = 'Select and copy manually'; }
+  });
+})();
+</script>
+</body>
+</html>
